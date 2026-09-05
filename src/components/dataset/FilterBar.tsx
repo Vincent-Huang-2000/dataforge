@@ -2,7 +2,7 @@
  * Dataset workbench filter row. Fully controlled: the page owns filter state
  * (synced to URL params) and the raw search text (debounced upstream).
  */
-import { Flag, Search, TriangleAlert } from 'lucide-react';
+import { Flag, Plus, Search, TriangleAlert } from 'lucide-react';
 import type { DatasetType, SplitName } from '@/engine/types';
 import type { ExampleFilters } from '@/lib/hooks';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +23,8 @@ export interface FilterBarProps {
   filters: ExampleFilters;
   onPatch: (patch: Partial<ExampleFilters>) => void;
   onClear: () => void;
+  /** Create a blank example of the project's dataset type. */
+  onNewExample: () => void;
   filteredCount: number | undefined;
   totalCount: number | undefined;
 }
@@ -33,6 +35,7 @@ export function FilterBar({
   filters,
   onPatch,
   onClear,
+  onNewExample,
   filteredCount,
   totalCount,
 }: FilterBarProps) {
@@ -116,6 +119,10 @@ export function FilterBar({
       </Button>
 
       <div className="ml-auto flex items-center gap-2">
+        <Button size="xs" variant="solid" onClick={onNewExample}>
+          <Plus />
+          New example
+        </Button>
         {hasActiveFilters && (
           <Button size="xs" variant="ghost" onClick={onClear}>
             Clear

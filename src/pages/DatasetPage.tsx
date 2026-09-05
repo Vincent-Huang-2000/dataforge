@@ -9,8 +9,10 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useFilteredDataset, type ExampleFilters } from '@/lib/hooks';
+import { useFilteredDataset, useProject, type ExampleFilters } from '@/lib/hooks';
+import { addExample } from '@/lib/mutations';
 import { useUiStore } from '@/lib/store';
+import { withUndo } from '@/lib/undo';
 import { fmtNum } from '@/lib/utils';
 import { BulkActionBar } from '@/components/dataset/BulkActionBar';
 import { DataGrid } from '@/components/dataset/DataGrid';
@@ -60,6 +62,7 @@ function writeFiltersToParams(prev: URLSearchParams, f: ExampleFilters): URLSear
 export function DatasetPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const project = useProject(projectId);
 
   const [filters, setFilters] = useState<ExampleFilters>(() =>
     filtersFromParams(searchParams),
@@ -142,6 +145,19 @@ export function DatasetPage() {
     );
   }, [setSearchParams]);
 
+  const handleNewExample = useCallback(async () => {
+    if (!projectId || !project) return;
+    // A stale filter or search query would hide the new row (and drop it from
+    // the inspector's prev/next chain), so start from a clean view.
+    clearFilters();
+    let newId: string | null = null;
+    await withUndo('New example', [], async () => {
+      newId = await addExample(projectId, project.datasetType);
+      return [newId];
+    });
+    if (newId) openExample(newId);
+  }, [projectId, project, clearFilters, openExample]);
+
   if (!projectId) return null;
 
   return (
@@ -153,6 +169,7 @@ export function DatasetPage() {
         filters={filters}
         onPatch={patchFilters}
         onClear={clearFilters}
+        onNewExample={handleNewExample}
         filteredCount={data?.total}
         totalCount={data?.projectTotal}
       />
@@ -163,6 +180,7 @@ export function DatasetPage() {
           activeId={exampleId}
           onOpen={openExample}
           onClearFilters={clearFilters}
+          onNewExample={handleNewExample}
         />
         {exampleId && (
           <aside

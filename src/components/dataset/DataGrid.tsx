@@ -172,9 +172,17 @@ export interface DataGridProps {
   activeId: string | null;
   onOpen: (id: string) => void;
   onClearFilters: () => void;
+  /** Create a blank example of the project's dataset type. */
+  onNewExample: () => void;
 }
 
-export function DataGrid({ data: paged, activeId, onOpen, onClearFilters }: DataGridProps) {
+export function DataGrid({
+  data: paged,
+  activeId,
+  onOpen,
+  onClearFilters,
+  onNewExample,
+}: DataGridProps) {
   const selection = useUiStore((s) => s.selection);
   const rows = paged?.rows ?? EMPTY_ROWS;
 
@@ -269,12 +277,17 @@ export function DataGrid({ data: paged, activeId, onOpen, onClearFilters }: Data
         <EmptyState
           icon={Inbox}
           title="No examples yet"
-          description="Import a dataset file or paste raw data to start filling the forge."
+          description="Import a dataset file or write the first example by hand."
           className="w-full max-w-lg animate-rise"
           action={
-            <Link to="../import" className={buttonVariants({ variant: 'solid', size: 'sm' })}>
-              Import data
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="../import" className={buttonVariants({ variant: 'solid', size: 'sm' })}>
+                Import data
+              </Link>
+              <Button size="sm" variant="outline" onClick={onNewExample}>
+                New example
+              </Button>
+            </div>
           }
         />
       </div>
