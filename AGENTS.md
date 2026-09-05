@@ -58,7 +58,7 @@ src/
 ├─ App.tsx       路由表 + 全局外壳
 └─ landing.ts    着陆页入口（仅自托管字体，无 React 逻辑）
 scripts/         check-registry.mjs（模型注册表 freshness 检查）
-docs/            截图
+docs/            截图；guides/ 开发者技术文档（data-model 数据模型与角色规范）
 .github/         workflows（deploy / registry-check / registry-update）+ dependabot
 ```
 
