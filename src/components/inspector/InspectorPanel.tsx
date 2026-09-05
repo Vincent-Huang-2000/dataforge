@@ -566,6 +566,14 @@ export function InspectorPanel({
         <DialogContent
           title="Delete this example?"
           description="You can undo with Ctrl+Z."
+          // Radix only returns focus to a DialogTrigger; this dialog is opened
+          // from a plain button, so on close focus would fall to <body> and
+          // Escape-to-restore (maximized mode) would go dead. Return it to the
+          // panel root instead.
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            rootRef.current?.focus();
+          }}
         >
           <p className="text-[13px] leading-relaxed text-ink-dim">
             This removes the example from the project.
