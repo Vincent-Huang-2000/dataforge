@@ -13,6 +13,8 @@ import {
   ChevronUp,
   Copy,
   Flag,
+  Maximize2,
+  Minimize2,
   Save,
   Trash2,
   X,
@@ -56,6 +58,10 @@ export interface InspectorPanelProps {
   filteredIds?: string[];
   /** Navigate the inspector to another example (prev/next). */
   onNavigate?: (id: string) => void;
+  /** Whether the editor currently covers the workbench. */
+  isMaximized?: boolean;
+  /** Switch between docked and maximized editor layouts. */
+  onToggleMaximize?: () => void;
 }
 
 /** Editable subset of an example, held locally until an explicit save. */
@@ -130,6 +136,8 @@ export function InspectorPanel({
   onClose,
   filteredIds,
   onNavigate,
+  isMaximized = false,
+  onToggleMaximize,
 }: InspectorPanelProps) {
   const example = useExample(exampleId);
 
@@ -310,6 +318,11 @@ export function InspectorPanel({
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Escape' && isMaximized && onToggleMaximize) {
+      e.preventDefault();
+      onToggleMaximize();
+      return;
+    }
     if (isEditableTarget(e.target)) return;
     if (e.key === 'j') {
       e.preventDefault();
@@ -327,7 +340,7 @@ export function InspectorPanel({
       tabIndex={-1}
       onKeyDown={handleKeyDown}
     >
-      <div className="panel-header">
+      <div className="panel-header shrink-0">
         <div className="flex min-w-0 items-center gap-2">
           <span className="tech-label">Example</span>
           <Tip label={<span className="font-mono text-[11px]">{example.id}</span>}>
@@ -406,6 +419,19 @@ export function InspectorPanel({
               <Trash2 />
             </Button>
           </Tip>
+          {onToggleMaximize && (
+            <Tip label={isMaximized ? 'Restore docked editor (Esc)' : 'Maximize editor'}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 max-lg:hidden"
+                onClick={onToggleMaximize}
+                aria-label={isMaximized ? 'Restore docked editor' : 'Maximize editor'}
+              >
+                {isMaximized ? <Minimize2 /> : <Maximize2 />}
+              </Button>
+            </Tip>
+          )}
           <Tip label="Close">
             <Button
               variant="ghost"
@@ -420,7 +446,7 @@ export function InspectorPanel({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 border-b border-hairline px-3 py-2">
+      <div className="shrink-0 flex flex-col gap-1.5 border-b border-hairline px-3 py-2">
         <div className="flex items-center gap-2">
           <Select
             value={example.split}
@@ -479,7 +505,7 @@ export function InspectorPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-gutter:stable]">
         {draft ? (
           example.type === 'sft' ? (
             <ConversationEditor
@@ -514,7 +540,7 @@ export function InspectorPanel({
         )}
       </div>
 
-      <div className="flex items-center gap-2 border-t border-hairline px-3 py-2">
+      <div className="shrink-0 flex items-center gap-2 border-t border-hairline px-3 py-2">
         {dirty && <span className="text-xs text-ink-dim">Unsaved changes</span>}
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="sm" disabled={!dirty || saving} onClick={revert}>

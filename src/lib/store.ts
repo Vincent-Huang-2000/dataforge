@@ -5,6 +5,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export const DEFAULT_INSPECTOR_DOCK_WIDTH = 500;
+
 export type Theme = 'dark' | 'light';
 
 interface UiState {
@@ -20,6 +22,9 @@ interface UiState {
   /** True while the inspector holds unsaved draft edits. */
   inspectorDirty: boolean;
   setInspectorDirty: (dirty: boolean) => void;
+  /** Remembered desktop width of the docked example inspector, in pixels. */
+  inspectorDockWidth: number;
+  setInspectorDockWidth: (width: number) => void;
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
 }
@@ -36,12 +41,14 @@ export const useUiStore = create<UiState>()(
       setInspectorId: (inspectorId) => set({ inspectorId }),
       inspectorDirty: false,
       setInspectorDirty: (inspectorDirty) => set({ inspectorDirty }),
+      inspectorDockWidth: DEFAULT_INSPECTOR_DOCK_WIDTH,
+      setInspectorDockWidth: (inspectorDockWidth) => set({ inspectorDockWidth }),
       commandPaletteOpen: false,
       setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
     }),
     {
       name: 'dataforge-ui',
-      partialize: (s) => ({ theme: s.theme }),
+      partialize: (s) => ({ theme: s.theme, inspectorDockWidth: s.inspectorDockWidth }),
     },
   ),
 );

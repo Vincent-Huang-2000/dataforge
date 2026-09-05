@@ -2,25 +2,39 @@
  * Dataset workbench — /p/:projectId/data.
  *
  * Layout: FilterBar on top, BulkActionBar when a selection exists, then the
- * virtualized DataGrid with the inspector docked right (overlay below lg).
+ * virtualized DataGrid with a resizable right-docked inspector that can maximize.
  * Filter state lives in component state and mirrors into URL params
  * (split, type, q, flagged, issues) so views are shareable; the selected
  * example travels in the `ex` param.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useFilteredDataset, useProject, type ExampleFilters } from '@/lib/hooks';
 import { addExample } from '@/lib/mutations';
-import { useUiStore } from '@/lib/store';
+import { DEFAULT_INSPECTOR_DOCK_WIDTH, useUiStore } from '@/lib/store';
 import { withUndo } from '@/lib/undo';
-import { fmtNum } from '@/lib/utils';
+import { cn, fmtNum } from '@/lib/utils';
 import { BulkActionBar } from '@/components/dataset/BulkActionBar';
 import { DataGrid } from '@/components/dataset/DataGrid';
 import { FilterBar } from '@/components/dataset/FilterBar';
 import { InspectorPanel } from '@/components/inspector/InspectorPanel';
 
 const PAGE = { offset: 0, limit: 100_000 };
+
+const MIN_INSPECTOR_WIDTH = 384;
+const MAX_INSPECTOR_WIDTH = 960;
+const MIN_GRID_WIDTH = 516;
+const SPLITTER_WIDTH = 8;
+
+function clampInspectorWidth(width: number, maximum: number): number {
+  const safeWidth = Number.isFinite(width) ? width : DEFAULT_INSPECTOR_DOCK_WIDTH;
+  return Math.round(Math.min(Math.max(safeWidth, MIN_INSPECTOR_WIDTH), maximum));
+}
 
 const DEFAULT_FILTERS: ExampleFilters = {
   split: 'all',
@@ -72,6 +86,87 @@ export function DatasetPage() {
 
   const selectionCount = useUiStore((s) => s.selection.size);
   const clearSelection = useUiStore((s) => s.clearSelection);
+  const inspectorDockWidth = useUiStore((s) => s.inspectorDockWidth);
+  const setInspectorDockWidth = useUiStore((s) => s.setInspectorDockWidth);
+  const [isInspectorMaximized, setInspectorMaximized] = useState(false);
+  const [layoutWidth, setLayoutWidth] = useState<number | null>(null);
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const inspectorWidthRef = useRef(inspectorDockWidth);
+
+  const maximumInspectorWidth = Math.max(
+    MIN_INSPECTOR_WIDTH,
+    Math.min(
+      MAX_INSPECTOR_WIDTH,
+      layoutWidth === null
+        ? MAX_INSPECTOR_WIDTH
+        : layoutWidth - MIN_GRID_WIDTH - SPLITTER_WIDTH,
+    ),
+  );
+  const [inspectorWidth, setInspectorWidth] = useState(() =>
+    clampInspectorWidth(inspectorDockWidth, maximumInspectorWidth),
+  );
+
+  const setClampedInspectorWidth = useCallback(
+    (width: number) => {
+      const next = clampInspectorWidth(width, maximumInspectorWidth);
+      inspectorWidthRef.current = next;
+      setInspectorWidth(next);
+      return next;
+    },
+    [maximumInspectorWidth],
+  );
+
+  useEffect(() => {
+    const element = layoutRef.current;
+    if (!element) return;
+    const updateWidth = () => setLayoutWidth(element.clientWidth);
+    updateWidth();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (dragRef.current) return;
+    setClampedInspectorWidth(inspectorDockWidth);
+  }, [inspectorDockWidth, setClampedInspectorWidth]);
+
+  const handleSplitterPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    dragRef.current = { startX: event.clientX, startWidth: inspectorWidthRef.current };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handleSplitterPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    setClampedInspectorWidth(drag.startWidth + drag.startX - event.clientX);
+  };
+
+  const finishSplitterDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setInspectorDockWidth(inspectorWidthRef.current);
+  };
+
+  const handleSplitterKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 80 : 24;
+    let next: number | null = null;
+    if (event.key === 'ArrowLeft') next = inspectorWidth + step;
+    else if (event.key === 'ArrowRight') next = inspectorWidth - step;
+    else if (event.key === 'Home') next = MIN_INSPECTOR_WIDTH;
+    else if (event.key === 'End') next = maximumInspectorWidth;
+    if (next === null) return;
+    event.preventDefault();
+    setInspectorDockWidth(setClampedInspectorWidth(next));
+  };
+
 
   // One scan serves the whole page: rows feed totals, ids feed the inspector.
   const data = useFilteredDataset(projectId, filters, PAGE);
@@ -167,43 +262,95 @@ export function DatasetPage() {
   if (!projectId) return null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <h1 className="sr-only">Dataset</h1>
-      <FilterBar
-        searchInput={searchInput}
-        onSearchInputChange={setSearchInput}
-        filters={filters}
-        onPatch={patchFilters}
-        onClear={clearFilters}
-        onNewExample={handleNewExample}
-        filteredCount={data?.total}
-        totalCount={data?.projectTotal}
-      />
-      {selectionCount > 0 && <BulkActionBar />}
-      <div className="flex min-h-0 flex-1">
-        <DataGrid
-          data={data}
-          activeId={exampleId}
-          onOpen={openExample}
-          onClearFilters={clearFilters}
+      <div
+        className="shrink-0"
+        aria-hidden={isInspectorMaximized || undefined}
+        inert={isInspectorMaximized || undefined}
+      >
+        <FilterBar
+          searchInput={searchInput}
+          onSearchInputChange={setSearchInput}
+          filters={filters}
+          onPatch={patchFilters}
+          onClear={clearFilters}
           onNewExample={handleNewExample}
+          filteredCount={data?.total}
+          totalCount={data?.projectTotal}
         />
+        {selectionCount > 0 && <BulkActionBar />}
+      </div>
+      <div ref={layoutRef} className="relative flex min-h-0 flex-1">
+        <div
+          className="flex min-w-0 flex-1"
+          aria-hidden={isInspectorMaximized || undefined}
+          inert={isInspectorMaximized || undefined}
+        >
+          <DataGrid
+            data={data}
+            activeId={exampleId}
+            onOpen={openExample}
+            onClearFilters={clearFilters}
+            onNewExample={handleNewExample}
+          />
+        </div>
         {exampleId && (
-          <aside
-            aria-label="Example inspector"
-            className="w-[500px] shrink-0 overflow-hidden border-l border-hairline bg-surface max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-40 max-lg:max-w-full max-lg:shadow-2xl max-lg:shadow-black/50"
-          >
-            <InspectorPanel
-              exampleId={exampleId}
-              onClose={closeInspector}
-              filteredIds={filteredIds}
-              onNavigate={openExample}
-            />
-          </aside>
+          <>
+            {!isInspectorMaximized && (
+              <div
+                role="separator"
+                aria-label="Resize example inspector"
+                aria-orientation="vertical"
+                aria-valuemin={MIN_INSPECTOR_WIDTH}
+                aria-valuemax={maximumInspectorWidth}
+                aria-valuenow={inspectorWidth}
+                tabIndex={0}
+                className="group relative z-30 hidden w-2 shrink-0 cursor-col-resize touch-none outline-none lg:block"
+                onPointerDown={handleSplitterPointerDown}
+                onPointerMove={handleSplitterPointerMove}
+                onPointerUp={finishSplitterDrag}
+                onPointerCancel={finishSplitterDrag}
+                onKeyDown={handleSplitterKeyDown}
+                onDoubleClick={() => {
+                  setInspectorDockWidth(
+                    setClampedInspectorWidth(DEFAULT_INSPECTOR_DOCK_WIDTH),
+                  );
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-hairline transition-colors group-hover:bg-accent group-focus-visible:bg-accent"
+                />
+              </div>
+            )}
+            <aside
+              aria-label="Example inspector"
+              className={cn(
+                'h-full min-h-0 shrink-0 overflow-hidden border-l border-hairline bg-surface',
+                isInspectorMaximized
+                  ? 'fixed inset-0 z-50 !w-full border-l-0 shadow-2xl shadow-black/50'
+                  : 'max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:!w-full max-lg:border-l-0 max-lg:shadow-2xl max-lg:shadow-black/50',
+              )}
+              style={isInspectorMaximized ? undefined : { width: inspectorWidth }}
+            >
+              <InspectorPanel
+                exampleId={exampleId}
+                onClose={closeInspector}
+                filteredIds={filteredIds}
+                onNavigate={openExample}
+                isMaximized={isInspectorMaximized}
+                onToggleMaximize={() => setInspectorMaximized((maximized) => !maximized)}
+              />
+            </aside>
+          </>
         )}
       </div>
       {data && data.total > data.rows.length && (
-        <p className="border-t border-hairline px-3 py-1.5 text-[11px] text-ink-faint">
+        <p
+          className="border-t border-hairline px-3 py-1.5 text-[11px] text-ink-faint"
+          aria-hidden={isInspectorMaximized || undefined}
+        >
           Showing the first {fmtNum(data.rows.length)} matches.
         </p>
       )}
