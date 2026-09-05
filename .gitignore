@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+
+# Vite cache
+.vite/
+
+# Environment (Vite build-time vars, e.g. DATAFORGE_BASE)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+
+# Editor / IDE
+.idea/
+.vscode/*
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
