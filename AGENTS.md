@@ -58,9 +58,19 @@ src/
 ├─ App.tsx       路由表 + 全局外壳
 └─ landing.ts    着陆页入口（仅自托管字体，无 React 逻辑）
 scripts/         check-registry.mjs（模型注册表 freshness 检查）
-docs/            截图；guides/ 开发者技术文档（data-model 数据模型与角色规范）
+docs/            截图；guides/ 开发者指南（见「Developer Docs」节）
 .github/         workflows（deploy / registry-check / registry-update）+ dependabot
 ```
+
+## Developer Docs（docs/guides/）
+
+按需读取：仅在修改代码触及下列覆盖范围时读对应文档，并**必须同步更新该文档**（代码提交含文档变更）；`docs/*.png` 截图仅展示用，无同步关系。
+
+| 文档 | 覆盖范围 |
+|---|---|
+| `guides/data-model.md` | 数据模型与角色规范：`Example`/`Message`、五角色语义、合法性规则、模板/导出/UI 的角色处理（真相源 `src/engine/types.ts`） |
+| `guides/page-layout.md` | 页面/区域/组件术语与路由归属（UI 命名与需求沟通用） |
+| `guides/quality-workbench.md` | Quality 页 scan/clean/dedup/decontaminate：规则清单、调用链、持久化边界、算法（自带维护清单 §8） |
 
 ## Development Commands
 
@@ -153,6 +163,7 @@ node scripts/check-registry.mjs   # 模型注册表 freshness 报告（无需 AP
 
 ## 关键注意项
 
+- 修改触及 `docs/guides/` 覆盖范围的代码时，**必须同步更新对应指南**（范围见「Developer Docs」节）
 - engine 模块头部注释统一声明「No DOM, no React — safe in Web Workers and Node (vitest)」——**保持此不变量**
 - 数据写经 `mutations.ts`、读经 `hooks.ts`，勿绕过直接操作 db（除已存在的 db 便捷函数）
 - API key 存 IndexedDB（`settings` 表），**绝不存 localStorage**
