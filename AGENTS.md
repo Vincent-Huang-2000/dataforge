@@ -89,34 +89,13 @@ node scripts/check-registry.mjs   # 模型注册表 freshness 报告（无需 AP
 
 ## Code Conventions & Common Patterns
 
-**命名**
-- 函数/变量 camelCase（`rowsToExamples`、`buildExportBundle`）
-- 组件/接口/类型 PascalCase（`DatasetPage`、`ModelInfo`；接口不加 `I` 前缀）
-- 常量 SCREAMING_SNAKE_CASE（`MODEL_REGISTRY`、`DEFAULT_CLEANING`）
-- 布尔 `is`/`has` 前缀（`isExportSupported`、`preservesThinking`）
-- 文件：`.ts` 逻辑 camelCase，`.tsx` 组件 PascalCase
+**命名**：函数/变量 camelCase；组件/接口/类型 PascalCase（接口不加 `I` 前缀）；常量 SCREAMING_SNAKE_CASE；布尔 `is`/`has` 前缀。文件：`.ts` 逻辑 camelCase，`.tsx` 组件 PascalCase。
 
-**类型**（单一真相源 `src/engine/types.ts`）
-- 核心类型集中在此：`DatasetType`、`Role`、`Message`、`Example`、`Project`、`ModelInfo`、`SourceFormat`、`FrameworkId`、`ProviderConfig`、`Job` 等
+**类型**（真相源 `src/engine/types.ts`，见下节）
 - 子域类型就近声明并导出（`DuplicateGroup`→dedup.ts、`EngineWorkerApi`→workerClient.ts）
-- 用 `import type` 消费类型，避免运行时依赖
 - 跨模块复用但不想暴露来源时用 `export type { ... } from './x'` 重导出
 
-**错误处理**
-- 自定义错误类继承 `Error` 并设 `name`（`HfHubError`、`UnsupportedExportError`、`ProviderHttpError`）
-- UI 层 `toast.error(err instanceof Error ? err.message : '...')`
-- 导入容错：非法行跳过记入 `ImportResult.errors`（上限 `MAX_IMPORT_ERRORS=20`）
-- 批作业单条失败重试一次，二次失败计入 `failed` 但不中断整个 job
-
-**async**
-- `async/await` 为主，并行用 `Promise.all`
-- 懒加载用 `import()`（`lib/tokensLazy.ts` 动态 import `@/engine/tokens` 避免 2MB tokenizer 进入口包）
-- 取消用 `AbortSignal`；批任务 `AbortController` + `runBatch.cancel()`
-- worker 方法经 comlink 全部返回 Promise
-
-**依赖注入 seam**：AI 操作（`lib/ai/*`）都接受 `ChatFn`/`MinimalDb` 注入参数，替代真实网络/IndexedDB，供单测使用——**新 AI 操作必须保留此 seam**。
-
-**路径别名**：`@/` → `src/`（tsconfig `paths` + vite `alias` 双处配置）。
+**路径别名**：`@/` → `src/`；改别名须同步 tsconfig `paths` 与 vite `alias` 双处（`vite.config.ts`）。
 
 ## Important Files
 
@@ -169,3 +148,6 @@ node scripts/check-registry.mjs   # 模型注册表 freshness 报告（无需 AP
 - API key 存 IndexedDB（`settings` 表），**绝不存 localStorage**
 - `scripts/check-registry.mjs` 的 `SHIPPED` 映射与 `src/engine/exporters/readme.ts` 的框架版本号必须**同步更新**（脚本内注释「Update together」）
 - 修改导出器/注册表会触发 CI 月度报告；`registry-update.yml` 依赖可选 `ANTHROPIC_API_KEY` secret
+- 自定义错误类继承 `Error` 并设 `name`（`HfHubError`、`UnsupportedExportError`、`ProviderHttpError`）；UI 层统一 `toast.error(err instanceof Error ? err.message : '...')`
+- 批作业单条失败重试一次，二次失败计入 `failed` 但不中断整个 job
+- 新 AI 操作必须保留注入 seam：接受 `ChatFn`/`MinimalDb` 参数替代真实网络/IndexedDB（供单测用）
