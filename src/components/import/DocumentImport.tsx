@@ -113,9 +113,7 @@ export function DocumentImport({
       setHandle(batch);
       void batch.promise.then((final) => {
         setHandle(null);
-        const created = Array.isArray(final.params.createdIds)
-          ? final.params.createdIds.length
-          : 0;
+        const created = Array.isArray(final.params.createdIds) ? final.params.createdIds.length : 0;
         if (final.status === 'completed') {
           setLastRun({ status: 'completed', created });
           toast.success(`Created ${fmtNum(created)} examples`, {
@@ -160,15 +158,15 @@ export function DocumentImport({
           spellCheck={false}
           disabled={running}
         />
-        <p className="mt-1 font-mono text-xs tabular-nums text-ink-faint">
+        <p className="text-ink-faint mt-1 font-mono text-xs tabular-nums">
           {fmtNum(normalized.length)} characters · {fmtNum(chunks.length)} chunks
         </p>
       </div>
 
       {qaPairs.length > 0 && (
         <div className="panel flex items-center gap-2.5 px-3 py-2">
-          <FileQuestion className="size-4 shrink-0 text-info" aria-hidden />
-          <span className="text-[13px] text-ink">
+          <FileQuestion className="text-info size-4 shrink-0" aria-hidden />
+          <span className="text-ink text-[13px]">
             Found <span className="font-mono tabular-nums">{fmtNum(qaPairs.length)}</span> Q&amp;A
             pairs in this document.
           </span>
@@ -185,14 +183,12 @@ export function DocumentImport({
         </div>
       )}
 
-      {pairsResult && (
-        <ImportPreview result={pairsResult} onDiscard={() => setPairsResult(null)} />
-      )}
+      {pairsResult && <ImportPreview result={pairsResult} onDiscard={() => setPairsResult(null)} />}
 
       <section className="panel" aria-label="Generate examples with AI">
         <div className="panel-header">
           <h3 className="tech-label">Generate with AI</h3>
-          <span className="font-mono text-xs tabular-nums text-ink-faint">
+          <span className="text-ink-faint font-mono text-xs tabular-nums">
             up to {fmtNum(chunks.length * perChunkNum)} examples
           </span>
         </div>
@@ -240,7 +236,7 @@ export function DocumentImport({
             <div className="flex items-center gap-3">
               <Spinner className="size-4 shrink-0" />
               <Progress value={job?.progress ?? 0} className="min-w-0 flex-1" />
-              <span className="shrink-0 font-mono text-xs tabular-nums text-ink-dim">
+              <span className="text-ink-dim shrink-0 font-mono text-xs tabular-nums">
                 {job?.detail ?? 'Starting…'}
               </span>
               <Button variant="ghost" size="sm" onClick={() => handle?.cancel()}>
@@ -262,7 +258,7 @@ export function DocumentImport({
           )}
 
           {lastRun?.status === 'completed' && (
-            <p className="flex items-center gap-1.5 text-[13px] text-ok">
+            <p className="text-ok flex items-center gap-1.5 text-[13px]">
               <CheckCircle2 className="size-4 shrink-0" aria-hidden />
               Created <span className="font-mono tabular-nums">{fmtNum(lastRun.created)}</span>{' '}
               examples.

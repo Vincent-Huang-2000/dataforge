@@ -20,7 +20,7 @@ export function Tip({
         <TooltipPrimitive.Content
           side={side}
           sideOffset={5}
-          className="z-50 max-w-72 rounded-(--radius-control) border border-hairline bg-surface-3 px-2.5 py-1.5 text-xs text-ink shadow-lg shadow-black/30"
+          className="border-hairline bg-surface-3 text-ink z-50 max-w-72 rounded-(--radius-control) border px-2.5 py-1.5 text-xs shadow-lg shadow-black/30"
         >
           {label}
         </TooltipPrimitive.Content>

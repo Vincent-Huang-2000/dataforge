@@ -46,11 +46,11 @@ export function TopBar({ project }: { project: Project }) {
   };
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-hairline bg-surface px-3">
+    <header className="border-hairline bg-surface flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
       <div className="flex min-w-0 items-center gap-2.5">
-        <h1 className="truncate text-[15px] font-semibold text-ink">{project.name}</h1>
+        <h1 className="text-ink truncate text-[15px] font-semibold">{project.name}</h1>
         <TypeBadge type={project.datasetType} className="shrink-0" />
-        <span className="shrink-0 font-mono text-xs tabular-nums text-ink-dim">
+        <span className="text-ink-dim shrink-0 font-mono text-xs tabular-nums">
           {fmtNum(counts?.[project.id])} examples
         </span>
       </div>
@@ -79,7 +79,7 @@ export function TopBar({ project }: { project: Project }) {
             <Redo2 />
           </Button>
         </Tip>
-        <div className="mx-1 h-4 w-px bg-hairline" aria-hidden="true" />
+        <div className="bg-hairline mx-1 h-4 w-px" aria-hidden="true" />
         <Button
           variant="ghost"
           size="sm"
@@ -105,7 +105,7 @@ export function TopBar({ project }: { project: Project }) {
             target="_blank"
             rel="noreferrer"
             aria-label="DataForge on GitHub"
-            className="flex size-7 items-center justify-center rounded-(--radius-control) text-ink-dim transition-colors duration-100 hover:bg-surface-3 hover:text-ink"
+            className="text-ink-dim hover:bg-surface-3 hover:text-ink flex size-7 items-center justify-center rounded-(--radius-control) transition-colors duration-100"
           >
             <GitHubMark className="size-4" />
           </a>

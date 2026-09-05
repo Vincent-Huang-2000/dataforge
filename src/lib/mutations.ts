@@ -4,13 +4,7 @@
  */
 import { db } from '@/lib/db';
 import { createExample } from '@/engine/types';
-import type {
-  DatasetType,
-  Example,
-  Message,
-  Project,
-  SplitName,
-} from '@/engine/types';
+import type { DatasetType, Example, Message, Project, SplitName } from '@/engine/types';
 
 async function touchProject(projectId: string): Promise<void> {
   await db.projects.update(projectId, { updatedAt: Date.now() });
@@ -163,16 +157,26 @@ export async function autoSplit(
   };
   const shuffled = [...ids].sort(() => rand() - 0.5);
   const n = shuffled.length;
-  const nVal = ratios.validation > 0 ? Math.max(n > 2 ? 1 : 0, Math.round(n * ratios.validation)) : 0;
+  const nVal =
+    ratios.validation > 0 ? Math.max(n > 2 ? 1 : 0, Math.round(n * ratios.validation)) : 0;
   const nTest = ratios.test > 0 ? Math.max(n > 2 ? 1 : 0, Math.round(n * ratios.test)) : 0;
   const valIds = shuffled.slice(0, nVal);
   const testIds = shuffled.slice(nVal, nVal + nTest);
   const trainIds = shuffled.slice(nVal + nTest);
   const now = Date.now();
   await db.transaction('rw', db.examples, async () => {
-    await db.examples.where('id').anyOf(trainIds as string[]).modify({ split: 'train', updatedAt: now });
-    await db.examples.where('id').anyOf(valIds as string[]).modify({ split: 'validation', updatedAt: now });
-    await db.examples.where('id').anyOf(testIds as string[]).modify({ split: 'test', updatedAt: now });
+    await db.examples
+      .where('id')
+      .anyOf(trainIds as string[])
+      .modify({ split: 'train', updatedAt: now });
+    await db.examples
+      .where('id')
+      .anyOf(valIds as string[])
+      .modify({ split: 'validation', updatedAt: now });
+    await db.examples
+      .where('id')
+      .anyOf(testIds as string[])
+      .modify({ split: 'test', updatedAt: now });
   });
   await touchProject(projectId);
   return { train: trainIds.length, validation: valIds.length, test: testIds.length };

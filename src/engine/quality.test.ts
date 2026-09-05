@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  CleaningOptions,
-  Example,
-  IssueType,
-  Message,
-  ModelInfo,
-  Role,
-} from '@/engine/types';
+import type { CleaningOptions, Example, IssueType, Message, ModelInfo, Role } from '@/engine/types';
 import { createExample } from '@/engine/types';
 import {
   DEFAULT_CLEANING,
@@ -19,8 +12,7 @@ import {
 const PROJECT = 'proj-quality';
 
 /** A substantial, PII-free, refusal-free user prompt (77 chars). */
-const USER_TEXT =
-  'Explain how photosynthesis converts sunlight into chemical energy in plants.';
+const USER_TEXT = 'Explain how photosynthesis converts sunlight into chemical energy in plants.';
 
 /** A clean assistant answer with a healthy ~2.6x response/instruction ratio. */
 const ASSISTANT_TEXT =
@@ -249,10 +241,7 @@ describe('analyzeExample — too_short / too_long / imbalanced_ratio', () => {
   });
 
   it('fires too_long beyond the character limit', () => {
-    const example = sft([
-      msg('user', USER_TEXT),
-      msg('assistant', 'a'.repeat(TOO_LONG_CHARS + 1)),
-    ]);
+    const example = sft([msg('user', USER_TEXT), msg('assistant', 'a'.repeat(TOO_LONG_CHARS + 1))]);
     const issue = analyzeExample(example).issues.find((i) => i.type === 'too_long');
     expect(issue?.severity).toBe('high');
     expect(issueTypes(cleanSft())).not.toContain('too_long');
@@ -827,7 +816,10 @@ describe('cleanExample — maskPii', () => {
   });
 
   it('masks SSNs as [SSN], not as partial phone numbers', () => {
-    const example = sft([msg('user', 'The number 123-45-6789 was on the form.'), msg('assistant', ASSISTANT_TEXT)]);
+    const example = sft([
+      msg('user', 'The number 123-45-6789 was on the form.'),
+      msg('assistant', ASSISTANT_TEXT),
+    ]);
     const { example: out } = cleanExample(example, only('maskPii'));
     expect(out.messages[0].content).toBe('The number [SSN] was on the form.');
   });
@@ -912,9 +904,7 @@ describe('cleanExample — contracts', () => {
       "Hello there ' friend, my email is [EMAIL] and my phone is [PHONE].",
     );
     expect(first.example.messages[1].role).toBe('assistant');
-    expect(first.example.messages[1].content).toBe(
-      'Sure!\n\nHere is the answer you asked for.',
-    );
+    expect(first.example.messages[1].content).toBe('Sure!\n\nHere is the answer you asked for.');
 
     const second = cleanExample(first.example, ALL_ON);
     expect(second.changed).toEqual([]);

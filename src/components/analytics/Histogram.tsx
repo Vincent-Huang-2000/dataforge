@@ -32,17 +32,17 @@ export function Histogram({
             <div
               role="img"
               aria-label={`${b.label} tokens: ${fmtNum(b.count)} examples`}
-              className="group flex h-36 items-end rounded-[3px] bg-surface-3/50"
+              className="group bg-surface-3/50 flex h-36 items-end rounded-[3px]"
             >
               {b.count > 0 && (
                 <div
-                  className="w-full rounded-[3px] bg-ember-500 transition-colors duration-150 group-hover:bg-ember-400"
+                  className="bg-ember-500 group-hover:bg-ember-400 w-full rounded-[3px] transition-colors duration-150"
                   style={{ height: `${Math.max((b.count / max) * 100, 2)}%` }}
                 />
               )}
             </div>
           </Tip>
-          <div className="truncate text-center font-mono text-[11px] tabular-nums text-ink-faint">
+          <div className="text-ink-faint truncate text-center font-mono text-[11px] tabular-nums">
             {b.label}
           </div>
         </div>

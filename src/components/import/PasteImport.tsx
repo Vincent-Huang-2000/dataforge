@@ -89,9 +89,7 @@ export function PasteImport({ projectId }: { projectId: string }) {
       const schema = await api.detect(rows);
       const converted = await api.convert(rows, schema, projectId);
       setResult(
-        errors.length > 0
-          ? { ...converted, errors: [...errors, ...converted.errors] }
-          : converted,
+        errors.length > 0 ? { ...converted, errors: [...errors, ...converted.errors] } : converted,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -108,7 +106,9 @@ export function PasteImport({ projectId }: { projectId: string }) {
           setText(e.target.value);
           if (result) setResult(null);
         }}
-        placeholder={'Paste JSONL, a JSON array, or CSV.\n{"messages":[{"role":"user","content":"…"}]}'}
+        placeholder={
+          'Paste JSONL, a JSON array, or CSV.\n{"messages":[{"role":"user","content":"…"}]}'
+        }
         aria-label="Pasted data"
         className="h-64 font-mono text-[13px] leading-relaxed"
         spellCheck={false}

@@ -42,7 +42,7 @@ export function JobIndicator() {
         <button
           type="button"
           aria-label={`${jobs.length} active ${noun}: view progress`}
-          className="flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2 text-ink-dim transition-colors duration-100 hover:bg-surface-3 hover:text-ink"
+          className="text-ink-dim hover:bg-surface-3 hover:text-ink flex h-8 items-center gap-1.5 rounded-(--radius-control) px-2 transition-colors duration-100"
         >
           <Spinner className="size-3.5" />
           <span className="font-mono text-xs tabular-nums">
@@ -55,18 +55,18 @@ export function JobIndicator() {
         {jobs.map((job) => (
           <div key={job.id} className="px-3 py-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-[13px] font-medium text-ink">
+              <span className="text-ink truncate text-[13px] font-medium">
                 {KIND_LABELS[job.kind]}
               </span>
               <span className="flex shrink-0 items-center gap-1">
-                <span className="font-mono text-xs tabular-nums text-ink-dim">
+                <span className="text-ink-dim font-mono text-xs tabular-nums">
                   {fmtNum(job.done)} / {fmtNum(job.total)}
                 </span>
                 <button
                   type="button"
                   aria-label={`Dismiss ${KIND_LABELS[job.kind]}`}
                   onClick={() => dismissJob(job.id)}
-                  className="rounded-(--radius-control) p-0.5 text-ink-faint transition-colors duration-100 hover:bg-surface-3 hover:text-ink"
+                  className="text-ink-faint hover:bg-surface-3 hover:text-ink rounded-(--radius-control) p-0.5 transition-colors duration-100"
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
@@ -74,10 +74,10 @@ export function JobIndicator() {
             </div>
             <Progress value={job.progress} className="mt-1.5" />
             {job.detail ? (
-              <p className="mt-1 truncate text-xs text-ink-faint">{job.detail}</p>
+              <p className="text-ink-faint mt-1 truncate text-xs">{job.detail}</p>
             ) : null}
             {job.failed > 0 ? (
-              <p className="mt-0.5 font-mono text-xs tabular-nums text-danger">
+              <p className="text-danger mt-0.5 font-mono text-xs tabular-nums">
                 {fmtNum(job.failed)} failed
               </p>
             ) : null}

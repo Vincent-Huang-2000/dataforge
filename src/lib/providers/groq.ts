@@ -6,12 +6,7 @@
  * `message.reasoning_content` (parsed mode) or inline `<think>` blocks;
  * both are mapped to {@link ChatResult.reasoning} by the shared parser.
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 import {
   asArray,

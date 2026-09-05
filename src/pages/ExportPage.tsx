@@ -44,13 +44,25 @@ const PAGE = { offset: 0, limit: 250000 };
 const UNCOUNTED_ESTIMATE_LIMIT = 2000;
 
 const FRAMEWORKS: { id: FrameworkId; name: string; description: string }[] = [
-  { id: 'jsonl', name: 'JSONL', description: 'OpenAI messages JSONL. Works with every 2026 trainer.' },
+  {
+    id: 'jsonl',
+    name: 'JSONL',
+    description: 'OpenAI messages JSONL. Works with every 2026 trainer.',
+  },
   { id: 'axolotl', name: 'Axolotl', description: 'YAML config plus dataset. v0.17' },
   { id: 'trl', name: 'TRL', description: 'Column-typed JSONL plus train.py. v1.5' },
-  { id: 'llama-factory', name: 'LLaMA-Factory', description: 'dataset_info.json entry plus data. v0.9.5' },
+  {
+    id: 'llama-factory',
+    name: 'LLaMA-Factory',
+    description: 'dataset_info.json entry plus data. v0.9.5',
+  },
   { id: 'ms-swift', name: 'MS-SWIFT', description: 'Swift dialect JSONL. v4.3' },
   { id: 'unsloth', name: 'Unsloth', description: 'Ready-to-run Python script. 2026.6' },
-  { id: 'openai-ft', name: 'OpenAI fine-tuning', description: 'Upload-ready for the OpenAI fine-tuning API' },
+  {
+    id: 'openai-ft',
+    name: 'OpenAI fine-tuning',
+    description: 'Upload-ready for the OpenAI fine-tuning API',
+  },
   { id: 'alpaca', name: 'Alpaca', description: 'Legacy single-turn format' },
   { id: 'sharegpt', name: 'ShareGPT', description: 'Legacy from/value format' },
 ];
@@ -114,10 +126,7 @@ export function ExportPage() {
     return { typeCounts: counts, dominantType: best };
   }, [rows, project?.datasetType]);
 
-  const presentTypes = useMemo(
-    () => DATASET_TYPES.filter((t) => typeCounts[t] > 0),
-    [typeCounts],
-  );
+  const presentTypes = useMemo(() => DATASET_TYPES.filter((t) => typeCounts[t] > 0), [typeCounts]);
 
   // null = follow the dominant type; an explicit choice falls back to the
   // dominant type if its examples disappear.
@@ -166,8 +175,7 @@ export function ExportPage() {
     };
   }, [storedTokens]);
   const tooManyUncounted = storedTokens.missing.length > UNCOUNTED_ESTIMATE_LIMIT;
-  const totalTokens =
-    estimatedTokens == null ? null : storedTokens.total + estimatedTokens;
+  const totalTokens = estimatedTokens == null ? null : storedTokens.total + estimatedTokens;
 
   const model = modelId != null ? getModel(modelId) : undefined;
 
@@ -229,9 +237,7 @@ export function ExportPage() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      toast.success(
-        `Saved ${fmtNum(bundle.files.length)} files, ${fmtBytes(zip.byteLength)}`,
-      );
+      toast.success(`Saved ${fmtNum(bundle.files.length)} files, ${fmtBytes(zip.byteLength)}`);
     } catch (err) {
       toast.error(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -275,8 +281,8 @@ export function ExportPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
         <header className="animate-rise" style={rise()}>
-          <h1 className="text-lg font-semibold text-ink">Export</h1>
-          <p className="mt-0.5 text-[13px] text-ink-dim">
+          <h1 className="text-ink text-lg font-semibold">Export</h1>
+          <p className="text-ink-dim mt-0.5 text-[13px]">
             Pick a framework, tune the options, download a training-ready bundle.
           </p>
         </header>
@@ -285,12 +291,9 @@ export function ExportPage() {
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="tech-label">Framework</h2>
             {presentTypes.length > 1 ? (
-              <span className="flex items-center gap-1.5 text-xs text-ink-faint">
+              <span className="text-ink-faint flex items-center gap-1.5 text-xs">
                 exporting
-                <Select
-                  value={exportedType}
-                  onValueChange={(v) => setTypeChoice(v as DatasetType)}
-                >
+                <Select value={exportedType} onValueChange={(v) => setTypeChoice(v as DatasetType)}>
                   <SelectTrigger
                     className="h-7 w-auto min-w-28 px-2 text-xs"
                     aria-label="Dataset type to export"
@@ -307,7 +310,7 @@ export function ExportPage() {
                 </Select>
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-xs text-ink-faint">
+              <span className="text-ink-faint flex items-center gap-1.5 text-xs">
                 exporting
                 <TypeBadge type={exportedType} />
                 <span className="font-mono tabular-nums">{fmtNum(exported.length)}</span>
@@ -360,7 +363,7 @@ export function ExportPage() {
           style={rise()}
         >
           <div>
-            <p className="text-sm text-ink">
+            <p className="text-ink text-sm">
               Exports <span className="font-mono tabular-nums">{fmtNum(exported.length)}</span>{' '}
               {TYPE_WORD[exportedType]} example{exported.length === 1 ? '' : 's'}.
               {skipped > 0 && (
@@ -371,14 +374,17 @@ export function ExportPage() {
                 </>
               )}
             </p>
-            <p className="mt-0.5 font-mono text-xs tabular-nums text-ink-faint">
+            <p className="text-ink-faint mt-0.5 font-mono text-xs tabular-nums">
               {tooManyUncounted
                 ? `tokens uncounted for ${fmtNum(storedTokens.missing.length)} examples · compute them in Analytics`
                 : totalTokens == null
                   ? 'counting tokens'
                   : `about ${fmtNum(totalTokens)} tokens`}
               {data.total > (rows?.length ?? 0) && (
-                <> · packaging first {fmtNum(rows?.length ?? 0)} of {fmtNum(data.total)}</>
+                <>
+                  {' '}
+                  · packaging first {fmtNum(rows?.length ?? 0)} of {fmtNum(data.total)}
+                </>
               )}
             </p>
           </div>

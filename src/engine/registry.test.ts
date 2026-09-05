@@ -11,12 +11,28 @@ import {
 
 /** Runtime mirrors of the type-level unions in types.ts (no runtime arrays exported there). */
 const TEMPLATE_FAMILIES: TemplateFamily[] = [
-  'chatml', 'kimi-chatml', 'llama3', 'llama4', 'gemma', 'mistral-tekken',
-  'deepseek', 'harmony', 'glm', 'granite', 'phi4', 'phi4-mini',
+  'chatml',
+  'kimi-chatml',
+  'llama3',
+  'llama4',
+  'gemma',
+  'mistral-tekken',
+  'deepseek',
+  'harmony',
+  'glm',
+  'granite',
+  'phi4',
+  'phi4-mini',
 ];
 const REASONING_MODES: ReasoningMode[] = ['none', 'always-on', 'hybrid', 'separate-checkpoints'];
 const TOOL_CALL_STYLES: ToolCallStyle[] = [
-  'none', 'hermes', 'openai', 'mistral', 'harmony-ts', 'glm', 'llama-ipython',
+  'none',
+  'hermes',
+  'openai',
+  'mistral',
+  'harmony-ts',
+  'glm',
+  'llama-ipython',
 ];
 const SIZE_CLASSES: ModelInfo['sizeClass'][] = ['small', 'medium', 'large'];
 const MODALITIES = ['image', 'video', 'audio'];
@@ -116,9 +132,21 @@ describe('MODEL_REGISTRY integrity', () => {
   it('covers all expected vendors', () => {
     const vendors = new Set(MODEL_REGISTRY.map((m) => m.vendor));
     for (const vendor of [
-      'Qwen', 'Meta', 'Google', 'DeepSeek', 'Mistral AI', 'Microsoft', 'Z.AI',
-      'Moonshot AI', 'OpenAI', 'IBM', 'NVIDIA', 'Hugging Face', 'Ai2',
-      'MiniMax', 'ByteDance Seed',
+      'Qwen',
+      'Meta',
+      'Google',
+      'DeepSeek',
+      'Mistral AI',
+      'Microsoft',
+      'Z.AI',
+      'Moonshot AI',
+      'OpenAI',
+      'IBM',
+      'NVIDIA',
+      'Hugging Face',
+      'Ai2',
+      'MiniMax',
+      'ByteDance Seed',
     ]) {
       expect(vendors, vendor).toContain(vendor);
     }

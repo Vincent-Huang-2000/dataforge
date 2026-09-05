@@ -37,6 +37,11 @@ describe('compareExamples', () => {
     ];
     expect(rows.sort(compareExamples).map((e) => e.id)).toEqual(['a', 'b', 'c']);
     // Stable regardless of input order.
-    expect(rows.reverse().sort(compareExamples).map((e) => e.id)).toEqual(['a', 'b', 'c']);
+    expect(
+      rows
+        .reverse()
+        .sort(compareExamples)
+        .map((e) => e.id),
+    ).toEqual(['a', 'b', 'c']);
   });
 });

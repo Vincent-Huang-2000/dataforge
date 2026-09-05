@@ -44,7 +44,8 @@ export function buildDemoExamples(projectId: string): Example[] {
         { role: 'user', content: 'Write a haiku about training data.' },
         {
           role: 'assistant',
-          content: 'Clean rows, ordered turns —\nten thousand small dialogues\nteach one voice to speak.',
+          content:
+            'Clean rows, ordered turns —\nten thousand small dialogues\nteach one voice to speak.',
         },
       ],
       tags: ['creative'],
@@ -52,7 +53,10 @@ export function buildDemoExamples(projectId: string): Example[] {
     mk({
       projectId,
       messages: [
-        { role: 'user', content: 'My JSONL file fails to parse on line 4 — what are common causes?' },
+        {
+          role: 'user',
+          content: 'My JSONL file fails to parse on line 4 — what are common causes?',
+        },
         {
           role: 'assistant',
           content:
@@ -65,12 +69,17 @@ export function buildDemoExamples(projectId: string): Example[] {
     mk({
       projectId,
       messages: [
-        { role: 'user', content: 'A train travels 240 km in 3 hours, then 180 km in 2 hours. What is its average speed for the whole trip?' },
+        {
+          role: 'user',
+          content:
+            'A train travels 240 km in 3 hours, then 180 km in 2 hours. What is its average speed for the whole trip?',
+        },
         {
           role: 'assistant',
           reasoning:
             'Total distance = 240 + 180 = 420 km. Total time = 3 + 2 = 5 hours. Average speed = total distance / total time = 420 / 5 = 84 km/h. Note: averaging the two segment speeds (80 and 90) would give 85, which is wrong because the segments have different durations.',
-          content: 'The average speed is **84 km/h** — total distance (420 km) divided by total time (5 h). Note that simply averaging the two segment speeds would give the wrong answer.',
+          content:
+            'The average speed is **84 km/h** — total distance (420 km) divided by total time (5 h). Note that simply averaging the two segment speeds would give the wrong answer.',
         },
       ],
       tags: ['math', 'reasoning'],
@@ -98,7 +107,11 @@ export function buildDemoExamples(projectId: string): Example[] {
           role: 'assistant',
           content: '',
           toolCalls: [
-            { id: 'call_demo_1', name: 'get_weather', arguments: '{"city":"Lyon","unit":"celsius"}' },
+            {
+              id: 'call_demo_1',
+              name: 'get_weather',
+              arguments: '{"city":"Lyon","unit":"celsius"}',
+            },
           ],
         },
         {
@@ -109,7 +122,8 @@ export function buildDemoExamples(projectId: string): Example[] {
         },
         {
           role: 'assistant',
-          content: 'Yes — Lyon currently has light rain at 14 °C with about 3 mm of precipitation expected, so an umbrella is a good idea.',
+          content:
+            'Yes — Lyon currently has light rain at 14 °C with about 3 mm of precipitation expected, so an umbrella is a good idea.',
         },
       ],
       tags: ['tool-calling'],
@@ -140,13 +154,20 @@ export function buildDemoExamples(projectId: string): Example[] {
     mk({
       projectId,
       type: 'preference',
-      messages: [{ role: 'user', content: 'Write a one-line commit message for a fix that stops the export button double-submitting.' }],
+      messages: [
+        {
+          role: 'user',
+          content:
+            'Write a one-line commit message for a fix that stops the export button double-submitting.',
+        },
+      ],
       chosen: [
-        { role: 'assistant', content: 'fix(export): debounce submit handler to prevent duplicate export jobs' },
+        {
+          role: 'assistant',
+          content: 'fix(export): debounce submit handler to prevent duplicate export jobs',
+        },
       ],
-      rejected: [
-        { role: 'assistant', content: 'fixed a bug with the button' },
-      ],
+      rejected: [{ role: 'assistant', content: 'fixed a bug with the button' }],
       tags: ['code'],
     }),
     // --- KTO (unpaired feedback) -----------------------------------------
@@ -179,7 +200,11 @@ export function buildDemoExamples(projectId: string): Example[] {
       projectId,
       type: 'rl',
       messages: [
-        { role: 'user', content: 'Sarah has 3 boxes with 12 apples each. She gives away a quarter of all her apples. How many apples does she have left?' },
+        {
+          role: 'user',
+          content:
+            'Sarah has 3 boxes with 12 apples each. She gives away a quarter of all her apples. How many apples does she have left?',
+        },
       ],
       answer: '27',
       tags: ['math', 'grpo'],

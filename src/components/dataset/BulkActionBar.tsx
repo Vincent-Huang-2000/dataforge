@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/Select';
 
 function Divider() {
-  return <div aria-hidden="true" className="mx-1 h-4 w-px bg-hairline" />;
+  return <div aria-hidden="true" className="bg-hairline mx-1 h-4 w-px" />;
 }
 
 export function BulkActionBar() {
@@ -101,9 +101,9 @@ export function BulkActionBar() {
     <div
       role="toolbar"
       aria-label="Bulk actions"
-      className="animate-rise flex flex-wrap items-center gap-2 border-b border-hairline bg-surface-2 px-3 py-1.5"
+      className="animate-rise border-hairline bg-surface-2 flex flex-wrap items-center gap-2 border-b px-3 py-1.5"
     >
-      <span className="font-mono text-[13px] tabular-nums text-accent">{fmtNum(n)}</span>
+      <span className="text-accent font-mono text-[13px] tabular-nums">{fmtNum(n)}</span>
       <span className="tech-label">selected</span>
 
       <Divider />
@@ -177,10 +177,9 @@ export function BulkActionBar() {
           title={`Delete ${fmtNum(n)} ${noun}?`}
           description="Removed examples can be restored with Ctrl+Z."
         >
-          <p className="text-[13px] leading-relaxed text-ink-dim">
-            This removes{' '}
-            <span className="font-mono tabular-nums text-ink">{fmtNum(n)}</span> {noun} from the
-            project, including any selected rows hidden by the current filters.
+          <p className="text-ink-dim text-[13px] leading-relaxed">
+            This removes <span className="text-ink font-mono tabular-nums">{fmtNum(n)}</span> {noun}{' '}
+            from the project, including any selected rows hidden by the current filters.
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={busy}>

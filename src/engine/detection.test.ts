@@ -134,7 +134,11 @@ describe('detectFormat', () => {
     const schema = detectFormat(repeat(sharegptRow, 5));
     expect(schema.format).toBe('sharegpt');
     expect(schema.confidence).toBeGreaterThanOrEqual(0.9);
-    expect(schema.fieldMapping).toEqual({ conversations: 'messages', from: 'role', value: 'content' });
+    expect(schema.fieldMapping).toEqual({
+      conversations: 'messages',
+      from: 'role',
+      value: 'content',
+    });
   });
 
   it('detects canonical alpaca and includes optional fields in the mapping', () => {
@@ -164,7 +168,11 @@ describe('detectFormat', () => {
   it('detects dpo-pairs with a string prompt', () => {
     const schema = detectFormat(repeat(dpoRow, 4));
     expect(schema.format).toBe('dpo-pairs');
-    expect(schema.fieldMapping).toEqual({ prompt: 'messages', chosen: 'chosen', rejected: 'rejected' });
+    expect(schema.fieldMapping).toEqual({
+      prompt: 'messages',
+      chosen: 'chosen',
+      rejected: 'rejected',
+    });
   });
 
   it('detects dpo-pairs with a message-list prompt (not openai-messages)', () => {
@@ -184,13 +192,21 @@ describe('detectFormat', () => {
   it('detects kto-unpaired (not alpaca) when boolean labels are present', () => {
     const schema = detectFormat([ktoRow(true), ktoRow(false), ktoRow(true)]);
     expect(schema.format).toBe('kto-unpaired');
-    expect(schema.fieldMapping).toEqual({ prompt: 'messages', completion: 'completion', label: 'label' });
+    expect(schema.fieldMapping).toEqual({
+      prompt: 'messages',
+      completion: 'completion',
+      label: 'label',
+    });
   });
 
   it('detects kto-unpaired with integer 0/1 and string labels', () => {
     const schema = detectFormat([ktoRow(1), ktoRow(0), ktoRow('true'), ktoRow('false')]);
     expect(schema.format).toBe('kto-unpaired');
-    expect(schema.fieldMapping).toEqual({ prompt: 'messages', completion: 'completion', label: 'label' });
+    expect(schema.fieldMapping).toEqual({
+      prompt: 'messages',
+      completion: 'completion',
+      label: 'label',
+    });
   });
 
   it('detects single-string-field rows as text', () => {
@@ -286,7 +302,9 @@ describe('helpers', () => {
   });
 
   it('resolveAlpacaField returns the first matching alias', () => {
-    expect(resolveAlpacaField({ prompt: 'p', instruction: 'i' }, 'instruction')).toBe('instruction');
+    expect(resolveAlpacaField({ prompt: 'p', instruction: 'i' }, 'instruction')).toBe(
+      'instruction',
+    );
     expect(resolveAlpacaField({ prompt: 'p' }, 'instruction')).toBe('prompt');
     expect(resolveAlpacaField({ prompt: 42 }, 'instruction')).toBeUndefined();
     expect(resolveAlpacaField({}, 'output')).toBeUndefined();

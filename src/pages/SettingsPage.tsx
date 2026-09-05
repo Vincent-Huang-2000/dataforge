@@ -35,8 +35,8 @@ function Section({
     <section className="space-y-3">
       <header>
         <p className="tech-label">{kicker}</p>
-        <h2 className="mt-0.5 text-[15px] font-semibold text-ink">{title}</h2>
-        {intro && <p className="mt-1 text-[13px] text-ink-dim">{intro}</p>}
+        <h2 className="text-ink mt-0.5 text-[15px] font-semibold">{title}</h2>
+        {intro && <p className="text-ink-dim mt-1 text-[13px]">{intro}</p>}
       </header>
       {children}
     </section>
@@ -87,9 +87,7 @@ function HfTokenSection() {
         disabled={stored === undefined}
         className="max-w-96 font-mono"
       />
-      <p className="mt-1 text-[13px] text-ink-dim">
-        Needed only for gated or private datasets.
-      </p>
+      <p className="text-ink-dim mt-1 text-[13px]">Needed only for gated or private datasets.</p>
     </div>
   );
 }
@@ -100,12 +98,12 @@ export function SettingsPage() {
   const setTheme = useUiStore((s) => s.setTheme);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="bg-bg min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl space-y-8 p-6 animate-rise">
+      <main className="animate-rise mx-auto max-w-3xl space-y-8 p-6">
         <header>
           <p className="tech-label">Workbench configuration</p>
-          <h1 className="mt-0.5 text-lg font-semibold text-ink">Settings</h1>
+          <h1 className="text-ink mt-0.5 text-lg font-semibold">Settings</h1>
         </header>
 
         <Section
@@ -114,7 +112,7 @@ export function SettingsPage() {
           intro="Bring your own keys. They are stored only in this browser (IndexedDB) and sent only to the provider you call."
         >
           {configs === undefined ? (
-            <div className="panel flex items-center gap-2 px-3 py-4 text-[13px] text-ink-dim">
+            <div className="panel text-ink-dim flex items-center gap-2 px-3 py-4 text-[13px]">
               <Spinner /> Loading provider configuration…
             </div>
           ) : (
@@ -149,10 +147,10 @@ export function SettingsPage() {
         <Section kicker="Interface" title="Appearance">
           <div className="panel flex items-center justify-between gap-3 px-3 py-2.5">
             <div>
-              <label htmlFor="light-theme" className="text-sm text-ink">
+              <label htmlFor="light-theme" className="text-ink text-sm">
                 Light theme
               </label>
-              <p className="text-[13px] text-ink-dim">
+              <p className="text-ink-dim text-[13px]">
                 Workshop daylight. The Forge defaults to dark.
               </p>
             </div>
@@ -165,27 +163,24 @@ export function SettingsPage() {
         </Section>
 
         <Section kicker="DataForge Studio" title="About">
-          <div className="panel divide-y divide-hairline">
+          <div className="panel divide-hairline divide-y">
             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-              <span className="text-sm text-ink">DataForge Studio</span>
+              <span className="text-ink text-sm">DataForge Studio</span>
               <Badge tone="neutral">v2.0.0</Badge>
             </div>
-            <p className="px-3 py-2.5 text-[13px] text-ink-dim">
-              100% client-side: datasets, settings and API keys never leave this
-              browser.
+            <p className="text-ink-dim px-3 py-2.5 text-[13px]">
+              100% client-side: datasets, settings and API keys never leave this browser.
             </p>
             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
               <a
                 href="https://github.com/Vincent-Huang-2000/dataforge"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline"
+                className="text-accent inline-flex items-center gap-1.5 text-[13px] hover:underline"
               >
                 GitHub repository <ExternalLink className="size-3.5" />
               </a>
-              <span className="text-[13px] text-ink-faint">
-                Built with the Forge design system
-              </span>
+              <span className="text-ink-faint text-[13px]">Built with the Forge design system</span>
             </div>
           </div>
         </Section>

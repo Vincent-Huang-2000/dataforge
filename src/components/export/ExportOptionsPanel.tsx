@@ -72,14 +72,11 @@ function OptionRow({
       <div className="min-w-0">
         <label
           htmlFor={id}
-          className={cn(
-            'block text-sm font-medium',
-            disabled ? 'text-ink-faint' : 'text-ink',
-          )}
+          className={cn('block text-sm font-medium', disabled ? 'text-ink-faint' : 'text-ink')}
         >
           {label}
         </label>
-        <p className="text-xs text-ink-dim">{hint}</p>
+        <p className="text-ink-dim text-xs">{hint}</p>
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
     </div>
@@ -170,12 +167,12 @@ export function ExportOptionsPanel({
               </Badge>
             )}
           </div>
-          <p className="mt-1 text-xs text-ink-dim">
+          <p className="text-ink-dim mt-1 text-xs">
             Sets think delimiters and template hints in the generated configs. Optional.
           </p>
         </div>
 
-        <div className="mt-3 flex flex-col divide-y divide-hairline border-t border-hairline">
+        <div className="divide-hairline border-hairline mt-3 flex flex-col divide-y border-t">
           <OptionRow
             label="Split files"
             hint="One data file per split. Off writes everything to train.jsonl."
@@ -213,21 +210,15 @@ export function ExportOptionsPanel({
           />
           <div className="flex items-center justify-between gap-4 py-2.5">
             <div className="min-w-0">
-              <label
-                htmlFor={splitSelectId}
-                className="block text-sm font-medium text-ink"
-              >
+              <label htmlFor={splitSelectId} className="text-ink block text-sm font-medium">
                 Splits
               </label>
-              <p className="text-xs text-ink-dim">
+              <p className="text-ink-dim text-xs">
                 Random train/validation/test assignment. Overwrites current splits.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Select
-                value={splitPreset}
-                onValueChange={(v) => setSplitPreset(v as SplitPreset)}
-              >
+              <Select value={splitPreset} onValueChange={(v) => setSplitPreset(v as SplitPreset)}>
                 <SelectTrigger
                   id={splitSelectId}
                   className="h-8 w-28 px-2 font-mono text-[13px] tabular-nums"
@@ -243,11 +234,7 @@ export function ExportOptionsPanel({
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                size="sm"
-                onClick={() => void handleAssignSplits()}
-                disabled={assigning}
-              >
+              <Button size="sm" onClick={() => void handleAssignSplits()} disabled={assigning}>
                 {assigning && <Spinner />} Assign
               </Button>
             </div>

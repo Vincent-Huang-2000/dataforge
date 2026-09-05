@@ -84,13 +84,13 @@ export function ImportPreview({
           <h3 className="tech-label">Preview</h3>
           <Badge tone="accent">{schema.format}</Badge>
         </div>
-        <span className="font-mono text-xs tabular-nums text-ink-dim">
+        <span className="text-ink-dim font-mono text-xs tabular-nums">
           {Math.round(schema.confidence * 100)}% confidence
         </span>
       </div>
 
       <div className="flex flex-col gap-3 p-3">
-        <p className="font-mono text-[13px] tabular-nums text-ink">
+        <p className="text-ink font-mono text-[13px] tabular-nums">
           {fmtNum(count)} examples
           <span className="text-ink-faint"> · {fmtNum(skipped)} skipped</span>
         </p>
@@ -98,7 +98,7 @@ export function ImportPreview({
         {schema.warnings.length > 0 && (
           <ul className="flex flex-col gap-1">
             {schema.warnings.map((w) => (
-              <li key={w} className="flex items-start gap-1.5 text-[13px] text-warn">
+              <li key={w} className="text-warn flex items-start gap-1.5 text-[13px]">
                 <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden />
                 <span>{w}</span>
               </li>
@@ -112,7 +112,7 @@ export function ImportPreview({
               type="button"
               onClick={() => setErrorsOpen((v) => !v)}
               aria-expanded={errorsOpen}
-              className="flex items-center gap-1 text-[13px] text-danger hover:underline"
+              className="text-danger flex items-center gap-1 text-[13px] hover:underline"
             >
               {errorsOpen ? (
                 <ChevronDown className="size-4" aria-hidden />
@@ -122,14 +122,14 @@ export function ImportPreview({
               <span className="font-mono tabular-nums">{fmtNum(errors.length)}</span> errors
             </button>
             {errorsOpen && (
-              <ul className="mt-1.5 flex flex-col gap-1 border-l border-danger/30 pl-3">
+              <ul className="border-danger/30 mt-1.5 flex flex-col gap-1 border-l pl-3">
                 {errors.slice(0, ERROR_COUNT).map((e, i) => (
-                  <li key={i} className="font-mono text-xs leading-relaxed text-ink-dim">
+                  <li key={i} className="text-ink-dim font-mono text-xs leading-relaxed">
                     {clip(e)}
                   </li>
                 ))}
                 {errors.length > ERROR_COUNT && (
-                  <li className="font-mono text-xs tabular-nums text-ink-faint">
+                  <li className="text-ink-faint font-mono text-xs tabular-nums">
                     +{fmtNum(errors.length - ERROR_COUNT)} more not shown
                   </li>
                 )}
@@ -139,10 +139,10 @@ export function ImportPreview({
         )}
 
         {count > 0 ? (
-          <div className="overflow-hidden rounded-(--radius-control) border border-hairline">
+          <div className="border-hairline overflow-hidden rounded-(--radius-control) border">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-hairline bg-surface-2">
+                <tr className="border-hairline bg-surface-2 border-b">
                   <th className="tech-label px-2 py-1.5 text-left font-medium">Type</th>
                   <th className="tech-label w-full px-2 py-1.5 text-left font-medium">
                     First user turn
@@ -152,16 +152,16 @@ export function ImportPreview({
               </thead>
               <tbody>
                 {examples.slice(0, SAMPLE_COUNT).map((e) => (
-                  <tr key={e.id} className="border-b border-hairline/60 last:border-b-0">
+                  <tr key={e.id} className="border-hairline/60 border-b last:border-b-0">
                     <td className="px-2 py-1.5 align-top">
                       <TypeBadge type={e.type} />
                     </td>
-                    <td className="max-w-0 truncate px-2 py-1.5 text-[13px] text-ink">
+                    <td className="text-ink max-w-0 truncate px-2 py-1.5 text-[13px]">
                       {firstUserContent(e) || (
-                        <span className="italic text-ink-faint">no user turn</span>
+                        <span className="text-ink-faint italic">no user turn</span>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-right font-mono text-[13px] tabular-nums text-ink-dim">
+                    <td className="text-ink-dim px-2 py-1.5 text-right font-mono text-[13px] tabular-nums">
                       {e.messages.length}
                     </td>
                   </tr>
@@ -170,7 +170,7 @@ export function ImportPreview({
             </table>
           </div>
         ) : (
-          <p className="flex items-start gap-1.5 text-[13px] text-warn">
+          <p className="text-warn flex items-start gap-1.5 text-[13px]">
             <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden />
             Nothing converted. Check the source format.
           </p>

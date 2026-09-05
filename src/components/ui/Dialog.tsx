@@ -21,11 +21,11 @@ export function DialogContent({
 }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-rise" />
+      <DialogPrimitive.Overlay className="data-[state=open]:animate-rise fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-          'panel w-[92vw] shadow-2xl shadow-black/50 data-[state=open]:animate-rise',
+          'fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
+          'panel data-[state=open]:animate-rise w-[92vw] shadow-2xl shadow-black/50',
           wide ? 'max-w-3xl' : 'max-w-md',
           className,
         )}
@@ -33,21 +33,19 @@ export function DialogContent({
       >
         <div className="panel-header">
           <div>
-            <DialogPrimitive.Title className="text-sm font-semibold text-ink">
+            <DialogPrimitive.Title className="text-ink text-sm font-semibold">
               {title}
             </DialogPrimitive.Title>
             {description ? (
-              <DialogPrimitive.Description className="mt-0.5 text-xs text-ink-dim">
+              <DialogPrimitive.Description className="text-ink-dim mt-0.5 text-xs">
                 {description}
               </DialogPrimitive.Description>
             ) : (
-              <DialogPrimitive.Description className="sr-only">
-                {title}
-              </DialogPrimitive.Description>
+              <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
             )}
           </div>
           <DialogPrimitive.Close
-            className="rounded-(--radius-control) p-1 text-ink-faint hover:bg-surface-3 hover:text-ink"
+            className="text-ink-faint hover:bg-surface-3 hover:text-ink rounded-(--radius-control) p-1"
             aria-label="Close"
           >
             <X className="size-3.5" />

@@ -373,7 +373,8 @@ function convertAlpacaRow(row: unknown, schema: DetectedSchema, projectId: strin
   }
   messages.push({
     role: 'user',
-    content: input !== undefined && input.trim().length > 0 ? `${instruction}\n${input}` : instruction,
+    content:
+      input !== undefined && input.trim().length > 0 ? `${instruction}\n${input}` : instruction,
   });
   messages.push(assistantFromString(output));
   applyRowReasoning(record, messages);

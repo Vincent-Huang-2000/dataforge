@@ -25,8 +25,7 @@ export async function parseDocx(data: ArrayBuffer): Promise<string> {
   const mod = (await import('mammoth')) as unknown as Partial<MammothLike> & {
     default?: MammothLike;
   };
-  const mammoth: MammothLike =
-    mod.default ?? (mod as MammothLike);
+  const mammoth: MammothLike = mod.default ?? (mod as MammothLike);
 
   // mammoth's browser build reads `arrayBuffer` while its Node build reads
   // `buffer` (forwarded to JSZip, which accepts ArrayBuffers). Supplying both

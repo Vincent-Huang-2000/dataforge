@@ -21,19 +21,16 @@ export const Textarea = forwardRef<
 >(({ className, ...props }, ref) => (
   <textarea
     ref={ref}
-    className={cn(fieldClasses, 'min-h-20 py-2 leading-relaxed resize-y', className)}
+    className={cn(fieldClasses, 'min-h-20 resize-y py-2 leading-relaxed', className)}
     {...props}
   />
 ));
 Textarea.displayName = 'Textarea';
 
-export function Label({
-  className,
-  ...props
-}: React.LabelHTMLAttributes<HTMLLabelElement>) {
+export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('mb-1.5 block text-[13px] font-medium text-ink-dim', className)}
+      className={cn('text-ink-dim mb-1.5 block text-[13px] font-medium', className)}
       {...props}
     />
   );

@@ -266,7 +266,10 @@ describe('openai adapter', () => {
 
   it('surfaces HTTP status and provider error message', async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse({ error: { message: 'Incorrect API key provided', type: 'invalid_request_error' } }, 401),
+      jsonResponse(
+        { error: { message: 'Incorrect API key provided', type: 'invalid_request_error' } },
+        401,
+      ),
     );
     const err: unknown = await adapter.chat(config('openai'), request()).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ProviderHttpError);
@@ -685,9 +688,7 @@ describe('groq adapter', () => {
 
   it('strips inline think tags from raw reasoning responses', async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(
-        completionPayload({ role: 'assistant', content: '<think>hmm</think>42' }),
-      ),
+      jsonResponse(completionPayload({ role: 'assistant', content: '<think>hmm</think>42' })),
     );
     const result = await adapter.chat(config('groq'), request());
     expect(result.content).toBe('42');

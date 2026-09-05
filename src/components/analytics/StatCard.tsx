@@ -22,13 +22,11 @@ export function StatCard({
   return (
     <div className={cn('panel flex flex-col gap-1.5 p-3', className)} style={style}>
       <h2 className="tech-label">{label}</h2>
-      <div className="font-mono text-[22px] font-medium leading-none tabular-nums text-ink">
+      <div className="text-ink font-mono text-[22px] leading-none font-medium tabular-nums">
         {value}
       </div>
       {sub != null && (
-        <div className="mt-auto flex min-h-6 items-center gap-2 text-xs text-ink-dim">
-          {sub}
-        </div>
+        <div className="text-ink-dim mt-auto flex min-h-6 items-center gap-2 text-xs">{sub}</div>
       )}
     </div>
   );

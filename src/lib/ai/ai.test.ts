@@ -46,9 +46,7 @@ interface MemoryDb extends MinimalDb {
 /** Plain in-memory stand-in for the Dexie tables used by the AI operations. */
 function memoryDb(seedExamples: Example[] = []): MemoryDb {
   const jobRows = new Map<string, Job>();
-  const exampleRows = new Map<string, Example>(
-    seedExamples.map((e) => [e.id, structuredClone(e)]),
-  );
+  const exampleRows = new Map<string, Example>(seedExamples.map((e) => [e.id, structuredClone(e)]));
   const cacheRows = new Map<string, CacheEntry>();
   return {
     jobRows,
@@ -688,9 +686,7 @@ describe('generateSynthetic', () => {
     };
     expect(() => generateSynthetic({ ...base, technique: 'magpie-style' })).toThrow(/topic/);
     expect(() => generateSynthetic({ ...base, technique: 'self-instruct' })).toThrow(/seed/);
-    expect(() =>
-      generateSynthetic({ ...base, technique: 'persona', count: 0 }),
-    ).toThrow(/count/);
+    expect(() => generateSynthetic({ ...base, technique: 'persona', count: 0 })).toThrow(/count/);
   });
 
   it('re-running with identical settings hits the transport again (per-run nonce)', async () => {

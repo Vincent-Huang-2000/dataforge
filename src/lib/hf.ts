@@ -270,14 +270,8 @@ interface RawInfoResponse {
  *
  * @param id dataset repo id, e.g. "tatsu-lab/alpaca"
  */
-export async function getDatasetInfo(
-  id: string,
-  opts?: HfRequestOptions,
-): Promise<HfDatasetInfo> {
-  const data = await fetchJson<RawInfoResponse>(
-    datasetsServerUrl('info', { dataset: id }),
-    opts,
-  );
+export async function getDatasetInfo(id: string, opts?: HfRequestOptions): Promise<HfDatasetInfo> {
+  const data = await fetchJson<RawInfoResponse>(datasetsServerUrl('info', { dataset: id }), opts);
   const configs: HfConfigInfo[] = [];
   for (const [configName, info] of Object.entries(data.dataset_info ?? {})) {
     const splits: HfSplitInfo[] = [];

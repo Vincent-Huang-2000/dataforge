@@ -144,8 +144,7 @@ export type ImportPhase = 'parsing' | 'detecting' | 'converting';
 
 /** Outcome of importing a file: converted rows, or a text document. */
 export type ImportFileOutcome =
-  | { kind: 'rows'; result: ImportResult }
-  | { kind: 'document'; text: string; title: string };
+  { kind: 'rows'; result: ImportResult } | { kind: 'document'; text: string; title: string };
 
 /**
  * Merges non-fatal parse-stage diagnostics (bad JSONL lines, malformed CSV

@@ -27,7 +27,11 @@ const SWIFT_THINK: ReasoningStyle = { kind: 'inline', open: '<think>', close: '<
 function swiftTools(ex: Example): string | undefined {
   if (ex.tools === undefined || ex.tools.length === 0) return undefined;
   return JSON.stringify(
-    ex.tools.map((t) => ({ name: t.name, description: t.description ?? '', parameters: t.parameters })),
+    ex.tools.map((t) => ({
+      name: t.name,
+      description: t.description ?? '',
+      parameters: t.parameters,
+    })),
   );
 }
 
@@ -52,7 +56,9 @@ export function buildMsSwiftRows(
         ...renderMessages(ex.messages, ctx, { context: 'prompt', style: SWIFT_THINK }),
         ...renderMessages(ex.chosen ?? [], ctx, { style: SWIFT_THINK }),
       ];
-      row['rejected_response'] = flattenMessagesText(ex.rejected ?? [], ctx, { style: SWIFT_THINK });
+      row['rejected_response'] = flattenMessagesText(ex.rejected ?? [], ctx, {
+        style: SWIFT_THINK,
+      });
     } else if (type === 'kto') {
       row['messages'] = [
         ...renderMessages(ex.messages, ctx, { context: 'prompt', style: SWIFT_THINK }),

@@ -7,12 +7,7 @@
  * field, `max_tokens` is always sent (the API requires it) and extended
  * thinking blocks are surfaced as {@link ChatResult.reasoning}.
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 import {
   asArray,
@@ -41,9 +36,7 @@ function apiHeaders(config: ProviderConfig): Record<string, string> {
 
 /** Map a canonical request onto a Messages API body. */
 function buildBody(req: ChatRequest): Record<string, unknown> {
-  const systemParts = req.messages
-    .filter((m) => m.role === 'system')
-    .map((m) => m.content);
+  const systemParts = req.messages.filter((m) => m.role === 'system').map((m) => m.content);
   if (req.jsonMode) systemParts.push(JSON_MODE_DIRECTIVE);
 
   const body: Record<string, unknown> = {

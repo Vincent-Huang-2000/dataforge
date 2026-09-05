@@ -44,12 +44,10 @@ export function ToolCallEditor({ toolCall, onChange, onRemove }: ToolCallEditorP
   }, [toolCall.arguments]);
 
   return (
-    <div className="rounded-(--radius-control) border border-hairline bg-surface-3/50 p-2">
+    <div className="border-hairline bg-surface-3/50 rounded-(--radius-control) border p-2">
       <div className="flex items-center gap-1.5">
         <span className="tech-label shrink-0">Tool call</span>
-        <span className="min-w-0 truncate font-mono text-[11px] text-ink-faint">
-          {toolCall.id}
-        </span>
+        <span className="text-ink-faint min-w-0 truncate font-mono text-[11px]">{toolCall.id}</span>
         <Tip label="Regenerate call id">
           <Button
             variant="ghost"
@@ -65,7 +63,7 @@ export function ToolCallEditor({ toolCall, onChange, onRemove }: ToolCallEditorP
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 hover:text-danger"
+            className="hover:text-danger h-6 w-6"
             aria-label="Remove tool call"
             onClick={onRemove}
           >
@@ -88,10 +86,7 @@ export function ToolCallEditor({ toolCall, onChange, onRemove }: ToolCallEditorP
         rows={autoRows(toolCall.arguments, 2, 10)}
         placeholder='{"location": "Berlin"}'
         aria-label="Tool call arguments (JSON)"
-        className={cn(
-          'mt-1.5 min-h-0 py-1.5 font-mono text-xs',
-          !validJson && 'border-danger/60',
-        )}
+        className={cn('mt-1.5 min-h-0 py-1.5 font-mono text-xs', !validJson && 'border-danger/60')}
       />
 
       <p

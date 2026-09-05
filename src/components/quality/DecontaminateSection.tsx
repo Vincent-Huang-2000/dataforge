@@ -40,8 +40,7 @@ const NGRAM_CHARS = 60;
 
 /** First user message content, collapsed and truncated for list rows. */
 function previewOf(example: Example): string {
-  const message =
-    example.messages.find((m) => m.role === 'user') ?? example.messages[0];
+  const message = example.messages.find((m) => m.role === 'user') ?? example.messages[0];
   const text = (message?.content ?? '').replace(/\s+/g, ' ').trim();
   if (text.length === 0) return '(no text)';
   return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
@@ -175,7 +174,7 @@ export function DecontaminateSection({
       </div>
 
       <div className="flex flex-col gap-3 p-3">
-        <p className="text-[13px] text-ink-dim">
+        <p className="text-ink-dim text-[13px]">
           Checks for verbatim overlap with public benchmarks. A 13-word window must match.
         </p>
 
@@ -187,7 +186,11 @@ export function DecontaminateSection({
               setResults(null);
             }}
           >
-            <SelectTrigger className="w-44" aria-label="Benchmark source" disabled={busy !== 'idle'}>
+            <SelectTrigger
+              className="w-44"
+              aria-label="Benchmark source"
+              disabled={busy !== 'idle'}
+            >
               <SelectValue placeholder="Pick a source" />
             </SelectTrigger>
             <SelectContent>
@@ -218,7 +221,7 @@ export function DecontaminateSection({
             disabled={busy !== 'idle'}
           >
             {busy === 'scan' ? (
-              <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" />
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
             ) : (
               <Play />
             )}
@@ -250,24 +253,23 @@ export function DecontaminateSection({
             disabled={busy !== 'idle'}
           />
         ) : (
-          <p className="text-xs text-ink-faint">
+          <p className="text-ink-faint text-xs">
             Built-in lists are small samples, not full benchmarks.
           </p>
         )}
       </div>
 
       {results && (
-        <div className="border-t border-hairline">
+        <div className="border-hairline border-t">
           {results.hits.length === 0 ? (
-            <p className="flex items-center gap-1.5 px-3 py-2.5 text-[13px] text-ok">
+            <p className="text-ok flex items-center gap-1.5 px-3 py-2.5 text-[13px]">
               <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
-              No overlap with {results.benchmarkName} found in {fmtNum(results.scanned)}{' '}
-              examples.
+              No overlap with {results.benchmarkName} found in {fmtNum(results.scanned)} examples.
             </p>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-                <span className="flex items-center gap-1.5 text-[13px] text-warn">
+                <span className="text-warn flex items-center gap-1.5 text-[13px]">
                   <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
                   <span className="font-mono tabular-nums">{fmtNum(results.hits.length)}</span>
                   {results.hits.length === 1 ? 'example overlaps' : 'examples overlap'} with{' '}
@@ -298,13 +300,13 @@ export function DecontaminateSection({
               {shownHits.map((hit) => (
                 <div
                   key={hit.exampleId}
-                  className="flex items-center gap-3 border-t border-hairline px-3 py-1.5"
+                  className="border-hairline flex items-center gap-3 border-t px-3 py-1.5"
                 >
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink-dim">
+                  <span className="text-ink-dim min-w-0 flex-1 truncate text-[13px]">
                     {results.previews[hit.exampleId] ?? hit.exampleId}
                   </span>
                   <span
-                    className="max-w-[36%] shrink-0 truncate font-mono text-xs text-warn"
+                    className="text-warn max-w-[36%] shrink-0 truncate font-mono text-xs"
                     title={hit.matchedNgram}
                   >
                     {truncate(hit.matchedNgram, NGRAM_CHARS)}
@@ -316,7 +318,7 @@ export function DecontaminateSection({
               ))}
 
               {results.hits.length > MAX_HITS_SHOWN && (
-                <p className="border-t border-hairline px-3 py-1.5 font-mono text-xs tabular-nums text-ink-faint">
+                <p className="border-hairline text-ink-faint border-t px-3 py-1.5 font-mono text-xs tabular-nums">
                   Showing first {MAX_HITS_SHOWN} of {fmtNum(results.hits.length)} hits.
                 </p>
               )}
@@ -330,13 +332,17 @@ export function DecontaminateSection({
           title={`Delete ${fmtNum(hitIds.length)} contaminated ${hitNoun}?`}
           description="Removed examples can be restored with Ctrl+Z."
         >
-          <p className="text-[13px] leading-relaxed text-ink-dim">
+          <p className="text-ink-dim text-[13px] leading-relaxed">
             This removes every example that overlaps with{' '}
             <span className="text-ink">{results?.benchmarkName ?? 'the benchmark'}</span> from the
             project.
           </p>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={busy !== 'idle'}>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmOpen(false)}
+              disabled={busy !== 'idle'}
+            >
               Cancel
             </Button>
             <Button variant="danger" onClick={() => void deleteHits()} disabled={busy !== 'idle'}>

@@ -59,10 +59,10 @@ export function ImportPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl p-6">
         <header className="animate-rise">
-          <h1 className="text-lg font-semibold text-ink">Import</h1>
-          <p className="mt-0.5 text-[13px] text-ink-dim">
-            Bring in examples from files, pasted text, Hugging Face or documents. Everything
-            stays in this browser.
+          <h1 className="text-ink text-lg font-semibold">Import</h1>
+          <p className="text-ink-dim mt-0.5 text-[13px]">
+            Bring in examples from files, pasted text, Hugging Face or documents. Everything stays
+            in this browser.
           </p>
         </header>
 

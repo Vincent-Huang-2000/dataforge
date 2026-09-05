@@ -61,8 +61,8 @@ export function QualityPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-4xl flex-col gap-4 p-6">
         <header>
-          <h1 className="text-lg font-semibold text-ink">Quality</h1>
-          <p className="mt-0.5 text-[13px] text-ink-dim">
+          <h1 className="text-ink text-lg font-semibold">Quality</h1>
+          <p className="text-ink-dim mt-0.5 text-[13px]">
             Scan, clean, dedup and decontaminate before export.
           </p>
         </header>

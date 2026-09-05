@@ -31,10 +31,10 @@ export function BarList({
     <div className={cn('flex flex-col gap-2', className)}>
       {items.map((item, i) => (
         <div key={item.key ?? i} className="flex items-center gap-3">
-          <div className={cn('w-24 shrink-0 truncate text-[13px] text-ink-dim', labelClassName)}>
+          <div className={cn('text-ink-dim w-24 shrink-0 truncate text-[13px]', labelClassName)}>
             {item.label}
           </div>
-          <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-3">
+          <div className="bg-surface-3 h-1.5 min-w-0 flex-1 overflow-hidden rounded-full">
             <div
               className={cn(
                 'h-full rounded-full transition-[width] duration-300',
@@ -43,7 +43,7 @@ export function BarList({
               style={{ width: `${(item.value / max) * 100}%` }}
             />
           </div>
-          <div className="w-14 shrink-0 text-right font-mono text-[13px] tabular-nums text-ink">
+          <div className="text-ink w-14 shrink-0 text-right font-mono text-[13px] tabular-nums">
             {item.display ?? fmtNum(item.value)}
           </div>
         </div>

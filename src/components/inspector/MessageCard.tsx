@@ -91,13 +91,13 @@ export function MessageCard({
     message.role === 'tool' && !(priorToolCallIds ?? []).includes(message.toolCallId ?? '');
 
   return (
-    <div className="rounded-(--radius-panel) border border-hairline bg-surface-2">
-      <div className="flex items-center gap-1 border-b border-hairline px-2 py-1.5">
+    <div className="border-hairline bg-surface-2 rounded-(--radius-panel) border">
+      <div className="border-hairline flex items-center gap-1 border-b px-2 py-1.5">
         <Select value={message.role} onValueChange={(v) => setRole(v as Role)}>
           <SelectTrigger
             aria-label="Message role"
             className={cn(
-              'h-5 w-auto gap-1 px-1.5 font-mono text-[11px] font-medium uppercase tracking-wide',
+              'h-5 w-auto gap-1 px-1.5 font-mono text-[11px] font-medium tracking-wide uppercase',
               ROLE_CHIP[message.role],
             )}
           >
@@ -118,9 +118,7 @@ export function MessageCard({
               <Switch
                 aria-label="Include in training loss"
                 checked={message.weight !== 0}
-                onCheckedChange={(checked) =>
-                  onChange({ ...message, weight: checked ? 1 : 0 })
-                }
+                onCheckedChange={(checked) => onChange({ ...message, weight: checked ? 1 : 0 })}
                 className="mr-1"
               />
             </Tip>
@@ -153,7 +151,7 @@ export function MessageCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:text-danger"
+              className="hover:text-danger h-7 w-7"
               onClick={onDelete}
               aria-label="Delete message"
             >
@@ -181,7 +179,7 @@ export function MessageCard({
                   type="button"
                   onClick={() => setReasoningOpen((open) => !open)}
                   aria-expanded={reasoningOpen}
-                  className="flex items-center gap-1 rounded-(--radius-control) text-ink-dim transition-colors duration-100 hover:text-ink focus-visible:outline focus-visible:outline-accent"
+                  className="text-ink-dim hover:text-ink focus-visible:outline-accent flex items-center gap-1 rounded-(--radius-control) transition-colors duration-100 focus-visible:outline"
                 >
                   <ChevronRight
                     className={cn(
@@ -191,14 +189,14 @@ export function MessageCard({
                   />
                   <span className="tech-label">Reasoning trace</span>
                 </button>
-                <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+                <span className="text-ink-faint font-mono text-[11px] tabular-nums">
                   {reasoningTokens == null ? '·' : fmtNum(reasoningTokens)} tok
                 </span>
                 <Tip label="Remove reasoning trace">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-auto h-6 w-6 hover:text-danger"
+                    className="hover:text-danger ml-auto h-6 w-6"
                     onClick={removeReasoning}
                     aria-label="Remove reasoning trace"
                   >
@@ -213,7 +211,7 @@ export function MessageCard({
                   rows={autoRows(message.reasoning)}
                   placeholder="Model thinking…"
                   aria-label="Reasoning trace"
-                  className="mt-1.5 min-h-0 border-l-2 border-l-ember-600/60 py-1.5"
+                  className="border-l-ember-600/60 mt-1.5 min-h-0 border-l-2 py-1.5"
                 />
               )}
             </div>
@@ -221,7 +219,7 @@ export function MessageCard({
             <Button
               variant="ghost"
               size="xs"
-              className="self-start text-ink-faint hover:text-ink"
+              className="text-ink-faint hover:text-ink self-start"
               onClick={() => onChange({ ...message, reasoning: '' })}
             >
               <Plus /> Add reasoning trace
@@ -235,19 +233,15 @@ export function MessageCard({
                 key={toolCall.id}
                 toolCall={toolCall}
                 onChange={(next) =>
-                  setToolCalls(
-                    (message.toolCalls ?? []).map((c, j) => (j === i ? next : c)),
-                  )
+                  setToolCalls((message.toolCalls ?? []).map((c, j) => (j === i ? next : c)))
                 }
-                onRemove={() =>
-                  setToolCalls((message.toolCalls ?? []).filter((_, j) => j !== i))
-                }
+                onRemove={() => setToolCalls((message.toolCalls ?? []).filter((_, j) => j !== i))}
               />
             ))}
             <Button
               variant="ghost"
               size="xs"
-              className="self-start text-ink-faint hover:text-ink"
+              className="text-ink-faint hover:text-ink self-start"
               onClick={() =>
                 setToolCalls([
                   ...(message.toolCalls ?? []),
@@ -276,7 +270,7 @@ export function MessageCard({
               />
             </div>
             {toolCallIdUnmatched && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-warn">
+              <p className="text-warn mt-1 flex items-center gap-1 text-xs">
                 <TriangleAlert className="size-3.5 shrink-0" />
                 No matching tool call in a prior assistant turn
               </p>

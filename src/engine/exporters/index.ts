@@ -126,7 +126,10 @@ function auxiliaryFiles(
       return [{ path: 'train.py', content: buildTrlScript(ctx, dataFiles) }];
     case 'llama-factory':
       return [
-        { path: 'dataset_info.json', content: buildLlamaFactoryDatasetInfo(ctx, dataFiles, hasTools) },
+        {
+          path: 'dataset_info.json',
+          content: buildLlamaFactoryDatasetInfo(ctx, dataFiles, hasTools),
+        },
         { path: 'llamafactory.yaml', content: buildLlamaFactoryTrainYaml(ctx, dataFiles) },
       ];
     case 'unsloth':

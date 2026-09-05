@@ -37,14 +37,14 @@ export function FrameworkCard({
       className={cn(
         'panel flex h-full w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors',
         selected ? 'border-accent bg-ember-500/5' : 'hover:border-hairline-strong',
-        disabled && 'cursor-not-allowed opacity-45 hover:border-hairline',
+        disabled && 'hover:border-hairline cursor-not-allowed opacity-45',
       )}
     >
       <span className="flex w-full items-center justify-between gap-2">
-        <span className="font-semibold text-ink">{name}</span>
-        {selected && <Check className="size-4 shrink-0 text-accent" aria-hidden />}
+        <span className="text-ink font-semibold">{name}</span>
+        {selected && <Check className="text-accent size-4 shrink-0" aria-hidden />}
       </span>
-      <span className="text-[13px] leading-snug text-ink-dim">{description}</span>
+      <span className="text-ink-dim text-[13px] leading-snug">{description}</span>
     </button>
   );
 

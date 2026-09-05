@@ -23,8 +23,7 @@ const PREVIEW_CHARS = 80;
 
 /** First user message content, collapsed and truncated for list rows. */
 function previewOf(example: Example): string {
-  const message =
-    example.messages.find((m) => m.role === 'user') ?? example.messages[0];
+  const message = example.messages.find((m) => m.role === 'user') ?? example.messages[0];
   const text = (message?.content ?? '').replace(/\s+/g, ' ').trim();
   if (text.length === 0) return '(no text)';
   return text.length > PREVIEW_CHARS ? `${text.slice(0, PREVIEW_CHARS)}…` : text;
@@ -38,13 +37,7 @@ interface DedupResults {
   threshold: number;
 }
 
-export function DedupSection({
-  projectId,
-  style,
-}: {
-  projectId: string;
-  style?: CSSProperties;
-}) {
+export function DedupSection({ projectId, style }: { projectId: string; style?: CSSProperties }) {
   const [threshold, setThreshold] = useState(0.85);
   const [busy, setBusy] = useState<'idle' | 'scan' | 'remove'>('idle');
   const [results, setResults] = useState<DedupResults | null>(null);
@@ -110,16 +103,13 @@ export function DedupSection({
     <section className="panel animate-rise" style={style}>
       <div className="panel-header">
         <h2 className="tech-label">Dedup</h2>
-        <span className="text-xs text-ink-faint">
+        <span className="text-ink-faint text-xs">
           Exact matches plus near duplicates above the threshold.
         </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 p-3">
-        <label
-          htmlFor="dedup-threshold"
-          className="text-[13px] text-ink-dim"
-        >
+        <label htmlFor="dedup-threshold" className="text-ink-dim text-[13px]">
           Similarity threshold
         </label>
         <input
@@ -131,11 +121,9 @@ export function DedupSection({
           value={threshold}
           onChange={(e) => setThreshold(Number(e.target.value))}
           disabled={busy !== 'idle'}
-          className="w-44 cursor-pointer accent-accent"
+          className="accent-accent w-44 cursor-pointer"
         />
-        <span className="font-mono text-[13px] tabular-nums text-ink">
-          {threshold.toFixed(2)}
-        </span>
+        <span className="text-ink font-mono text-[13px] tabular-nums">{threshold.toFixed(2)}</span>
         <Button
           variant="solid"
           className="ml-auto"
@@ -143,7 +131,7 @@ export function DedupSection({
           disabled={busy !== 'idle'}
         >
           {busy === 'scan' ? (
-            <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" />
+            <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
           ) : (
             <Play />
           )}
@@ -152,28 +140,28 @@ export function DedupSection({
       </div>
 
       {results && (
-        <div className="border-t border-hairline">
+        <div className="border-hairline border-t">
           {groups.length === 0 ? (
-            <p className="flex items-center gap-1.5 px-3 py-2.5 text-[13px] text-ok">
+            <p className="text-ok flex items-center gap-1.5 px-3 py-2.5 text-[13px]">
               <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
               No duplicates found at this threshold.
             </p>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[13px] text-ink-dim">
+              <div className="text-ink-dim flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[13px]">
                 <span>
-                  <span className="font-mono tabular-nums text-ink">
+                  <span className="text-ink font-mono tabular-nums">
                     {fmtNum(results.exact.length)}
                   </span>{' '}
                   exact {results.exact.length === 1 ? 'group' : 'groups'}
                 </span>
                 <span>
-                  <span className="font-mono tabular-nums text-ink">
+                  <span className="text-ink font-mono tabular-nums">
                     {fmtNum(results.near.length)}
                   </span>{' '}
                   near {results.near.length === 1 ? 'group' : 'groups'}
                 </span>
-                <span className="ml-auto font-mono text-xs tabular-nums text-ink-faint">
+                <span className="text-ink-faint ml-auto font-mono text-xs tabular-nums">
                   scanned {fmtNum(results.scanned)} at {results.threshold.toFixed(2)}
                 </span>
               </div>
@@ -181,31 +169,31 @@ export function DedupSection({
               {shown.map((group) => (
                 <div
                   key={`${group.reason}-${group.keepId}`}
-                  className="flex items-center gap-3 border-t border-hairline px-3 py-1.5"
+                  className="border-hairline flex items-center gap-3 border-t px-3 py-1.5"
                 >
                   <Badge tone="neutral" className="shrink-0">
                     {group.reason}
                   </Badge>
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-ink-dim">
+                  <span className="text-ink-dim min-w-0 flex-1 truncate text-[13px]">
                     {results.previews[group.keepId] ?? group.keepId}
                   </span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-ink-faint">
+                  <span className="text-ink-faint shrink-0 font-mono text-xs tabular-nums">
                     {fmtNum(group.dropIds.length)}{' '}
                     {group.dropIds.length === 1 ? 'duplicate' : 'duplicates'}
                   </span>
-                  <span className="w-10 shrink-0 text-right font-mono text-xs tabular-nums text-ink">
+                  <span className="text-ink w-10 shrink-0 text-right font-mono text-xs tabular-nums">
                     {Math.round(group.similarity * 100)}%
                   </span>
                 </div>
               ))}
 
               {groups.length > MAX_GROUPS_SHOWN && (
-                <p className="border-t border-hairline px-3 py-1.5 font-mono text-xs tabular-nums text-ink-faint">
+                <p className="border-hairline text-ink-faint border-t px-3 py-1.5 font-mono text-xs tabular-nums">
                   Showing first {MAX_GROUPS_SHOWN} of {fmtNum(groups.length)} groups.
                 </p>
               )}
 
-              <div className="flex justify-end border-t border-hairline px-3 py-2">
+              <div className="border-hairline flex justify-end border-t px-3 py-2">
                 <Button
                   variant="danger"
                   onClick={() => void removeDuplicates()}

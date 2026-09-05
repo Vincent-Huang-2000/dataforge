@@ -52,12 +52,12 @@ export function FilterBar({
     <div
       role="toolbar"
       aria-label="Example filters"
-      className="flex flex-wrap items-center gap-2 border-b border-hairline bg-surface px-3 py-2"
+      className="border-hairline bg-surface flex flex-wrap items-center gap-2 border-b px-3 py-2"
     >
       <div className="relative w-60">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+          className="text-ink-faint pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
         />
         <Input
           value={searchInput}
@@ -68,10 +68,7 @@ export function FilterBar({
         />
       </div>
 
-      <Select
-        value={split}
-        onValueChange={(v) => onPatch({ split: v as SplitName | 'all' })}
-      >
+      <Select value={split} onValueChange={(v) => onPatch({ split: v as SplitName | 'all' })}>
         <SelectTrigger className="h-8 w-32 text-[13px]" aria-label="Filter by split">
           <SelectValue placeholder="All splits" />
         </SelectTrigger>
@@ -83,10 +80,7 @@ export function FilterBar({
         </SelectContent>
       </Select>
 
-      <Select
-        value={type}
-        onValueChange={(v) => onPatch({ type: v as DatasetType | 'all' })}
-      >
+      <Select value={type} onValueChange={(v) => onPatch({ type: v as DatasetType | 'all' })}>
         <SelectTrigger className="h-8 w-28 text-[13px]" aria-label="Filter by dataset type">
           <SelectValue placeholder="All types" />
         </SelectTrigger>
@@ -128,7 +122,7 @@ export function FilterBar({
             Clear
           </Button>
         )}
-        <span className="font-mono text-xs tabular-nums text-ink-dim">
+        <span className="text-ink-dim font-mono text-xs tabular-nums">
           {fmtNum(filteredCount)}
           <span className="text-ink-faint"> / {fmtNum(totalCount)}</span>
         </span>

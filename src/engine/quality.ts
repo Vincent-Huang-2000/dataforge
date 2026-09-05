@@ -128,8 +128,7 @@ const MOJIBAKE_FIXES: ReadonlyArray<readonly [string, string]> = [
  * Signals of broken text: latin-1/cp1252 mojibake prefixes (`â€`, `Ã¢`, `Ã©`),
  * the replacement character, null bytes and literal escaped hex bytes.
  */
-const ENCODING_ERROR_PATTERN =
-  /â[€]|Ã[¢©]|�|\u0000|\\x[0-9a-fA-F]{2}/;
+const ENCODING_ERROR_PATTERN = /â[€]|Ã[¢©]|�|\u0000|\\x[0-9a-fA-F]{2}/;
 
 // DEFAULT_CLEANING lives in types.ts (dependency-free) so UI code can import
 // it without dragging this module's tokenizer dependency into the entry
@@ -649,7 +648,9 @@ function completenessScore(example: Example): number {
   const user = roles.includes('user') ? 0.5 : 0;
   switch (example.type) {
     case 'preference':
-      return user + (hasContent(example.chosen) ? 0.25 : 0) + (hasContent(example.rejected) ? 0.25 : 0);
+      return (
+        user + (hasContent(example.chosen) ? 0.25 : 0) + (hasContent(example.rejected) ? 0.25 : 0)
+      );
     case 'kto':
       return (
         user +
@@ -657,9 +658,7 @@ function completenessScore(example: Example): number {
         (typeof example.label === 'boolean' ? 0.25 : 0)
       );
     case 'rl':
-      return (
-        user + (typeof example.answer === 'string' && example.answer.trim() !== '' ? 0.5 : 0)
-      );
+      return user + (typeof example.answer === 'string' && example.answer.trim() !== '' ? 0.5 : 0);
     default:
       return user + (roles.includes('assistant') ? 0.5 : 0);
   }

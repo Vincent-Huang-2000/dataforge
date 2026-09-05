@@ -92,7 +92,7 @@ export function MessageList({
   return (
     <div className="flex flex-col gap-2">
       {messages.length === 0 && emptyText && (
-        <p className="rounded-(--radius-control) border border-dashed border-hairline px-3 py-2 text-center text-xs text-ink-faint">
+        <p className="border-hairline text-ink-faint rounded-(--radius-control) border border-dashed px-3 py-2 text-center text-xs">
           {emptyText}
         </p>
       )}
@@ -113,7 +113,7 @@ export function MessageList({
       <Button
         variant="ghost"
         size="xs"
-        className="self-start text-ink-faint hover:text-ink"
+        className="text-ink-faint hover:text-ink self-start"
         onClick={addMessage}
       >
         <Plus /> {addLabel}

@@ -523,7 +523,9 @@ describe('llama-factory', () => {
   });
 
   it('emits llamafactory.yaml with model_name_or_path = hfId and stage mapping', () => {
-    const sft = parseYaml(fileContent(bundleFor('llama-factory', 'sft'), 'llamafactory.yaml')) as Row;
+    const sft = parseYaml(
+      fileContent(bundleFor('llama-factory', 'sft'), 'llamafactory.yaml'),
+    ) as Row;
     expect(sft['model_name_or_path']).toBe(QWEN.hfId);
     expect(sft['stage']).toBe('sft');
     expect(sft['template']).toBe('qwen');
@@ -535,7 +537,9 @@ describe('llama-factory', () => {
     expect(dpo['stage']).toBe('dpo');
     expect(dpo['pref_beta']).toBe(0.1);
 
-    const kto = parseYaml(fileContent(bundleFor('llama-factory', 'kto'), 'llamafactory.yaml')) as Row;
+    const kto = parseYaml(
+      fileContent(bundleFor('llama-factory', 'kto'), 'llamafactory.yaml'),
+    ) as Row;
     expect(kto['stage']).toBe('kto');
   });
 

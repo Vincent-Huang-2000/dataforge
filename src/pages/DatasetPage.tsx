@@ -8,10 +8,7 @@
  * example travels in the `ex` param.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type {
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-} from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useFilteredDataset, useProject, type ExampleFilters } from '@/lib/hooks';
@@ -48,12 +45,8 @@ function filtersFromParams(params: URLSearchParams): ExampleFilters {
   const split = params.get('split');
   const type = params.get('type');
   return {
-    split:
-      split === 'train' || split === 'validation' || split === 'test' ? split : 'all',
-    type:
-      type === 'sft' || type === 'preference' || type === 'kto' || type === 'rl'
-        ? type
-        : 'all',
+    split: split === 'train' || split === 'validation' || split === 'test' ? split : 'all',
+    type: type === 'sft' || type === 'preference' || type === 'kto' || type === 'rl' ? type : 'all',
     search: params.get('q') ?? '',
     flaggedOnly: params.get('flagged') === '1',
     withIssuesOnly: params.get('issues') === '1',
@@ -79,9 +72,7 @@ export function DatasetPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const project = useProject(projectId);
 
-  const [filters, setFilters] = useState<ExampleFilters>(() =>
-    filtersFromParams(searchParams),
-  );
+  const [filters, setFilters] = useState<ExampleFilters>(() => filtersFromParams(searchParams));
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
   const selectionCount = useUiStore((s) => s.selection.size);
@@ -98,9 +89,7 @@ export function DatasetPage() {
     MIN_INSPECTOR_WIDTH,
     Math.min(
       MAX_INSPECTOR_WIDTH,
-      layoutWidth === null
-        ? MAX_INSPECTOR_WIDTH
-        : layoutWidth - MIN_GRID_WIDTH - SPLITTER_WIDTH,
+      layoutWidth === null ? MAX_INSPECTOR_WIDTH : layoutWidth - MIN_GRID_WIDTH - SPLITTER_WIDTH,
     ),
   );
   const [inspectorWidth, setInspectorWidth] = useState(() =>
@@ -167,7 +156,6 @@ export function DatasetPage() {
     setInspectorDockWidth(setClampedInspectorWidth(next));
   };
 
-
   // One scan serves the whole page: rows feed totals, ids feed the inspector.
   const data = useFilteredDataset(projectId, filters, PAGE);
   const filteredIds = data?.ids;
@@ -196,9 +184,7 @@ export function DatasetPage() {
   // Debounce free-text search before it hits the live query.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setFilters((prev) =>
-        prev.search === searchInput ? prev : { ...prev, search: searchInput },
-      );
+      setFilters((prev) => (prev.search === searchInput ? prev : { ...prev, search: searchInput }));
     }, 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
@@ -313,21 +299,19 @@ export function DatasetPage() {
                 onPointerCancel={finishSplitterDrag}
                 onKeyDown={handleSplitterKeyDown}
                 onDoubleClick={() => {
-                  setInspectorDockWidth(
-                    setClampedInspectorWidth(DEFAULT_INSPECTOR_DOCK_WIDTH),
-                  );
+                  setInspectorDockWidth(setClampedInspectorWidth(DEFAULT_INSPECTOR_DOCK_WIDTH));
                 }}
               >
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-hairline transition-colors group-hover:bg-accent group-focus-visible:bg-accent"
+                  className="bg-hairline group-hover:bg-accent group-focus-visible:bg-accent absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors"
                 />
               </div>
             )}
             <aside
               aria-label="Example inspector"
               className={cn(
-                'h-full min-h-0 shrink-0 overflow-hidden border-l border-hairline bg-surface',
+                'border-hairline bg-surface h-full min-h-0 shrink-0 overflow-hidden border-l',
                 isInspectorMaximized
                   ? 'fixed inset-0 z-50 !w-full border-l-0 shadow-2xl shadow-black/50'
                   : 'max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:!w-full max-lg:border-l-0 max-lg:shadow-2xl max-lg:shadow-black/50',
@@ -348,7 +332,7 @@ export function DatasetPage() {
       </div>
       {data && data.total > data.rows.length && (
         <p
-          className="border-t border-hairline px-3 py-1.5 text-[11px] text-ink-faint"
+          className="border-hairline text-ink-faint border-t px-3 py-1.5 text-[11px]"
           aria-hidden={isInspectorMaximized || undefined}
         >
           Showing the first {fmtNum(data.rows.length)} matches.

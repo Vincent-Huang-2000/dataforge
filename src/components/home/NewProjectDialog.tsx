@@ -154,7 +154,7 @@ export function NewProjectDialog({
 
           <div>
             <Label id="np-model-label">
-              Target model <span className="font-normal text-ink-faint">(optional)</span>
+              Target model <span className="text-ink-faint font-normal">(optional)</span>
             </Label>
             <Select
               value={targetModelId}
@@ -167,7 +167,7 @@ export function NewProjectDialog({
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <div className="sticky top-0 z-10 -mt-1 border-b border-hairline bg-surface-2 p-1.5">
+                <div className="border-hairline bg-surface-2 sticky top-0 z-10 -mt-1 border-b p-1.5">
                   <Input
                     value={modelQuery}
                     onChange={(e) => setModelQuery(e.target.value)}
@@ -187,7 +187,7 @@ export function NewProjectDialog({
                       <SelectItem key={m.id} value={m.id}>
                         <span className="inline-flex items-center gap-2">
                           <span>{m.name}</span>
-                          <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+                          <span className="text-ink-faint font-mono text-[11px] tabular-nums">
                             {fmtCtx(m.nativeCtx)}
                           </span>
                           <Badge tone={SIZE_TONES[m.sizeClass]}>{m.sizeClass}</Badge>
@@ -197,13 +197,13 @@ export function NewProjectDialog({
                   </SelectGroup>
                 ))}
                 {modelGroups.length === 0 && (
-                  <p className="px-3 py-2 text-[13px] text-ink-faint">
+                  <p className="text-ink-faint px-3 py-2 text-[13px]">
                     No models match &ldquo;{modelQuery}&rdquo;
                   </p>
                 )}
               </SelectContent>
             </Select>
-            <p className="mt-1 text-xs text-ink-faint">
+            <p className="text-ink-faint mt-1 text-xs">
               Drives chat-template rendering, token counts and context-limit checks.
             </p>
           </div>

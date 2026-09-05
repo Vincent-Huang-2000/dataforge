@@ -31,7 +31,8 @@ const PAGES: { to: string; label: string; icon: LucideIcon }[] = [
   { to: 'export', label: 'Export', icon: PackageOpen },
 ];
 
-const ITEM = 'relative flex h-11 w-full items-center overflow-hidden transition-colors duration-100';
+const ITEM =
+  'relative flex h-11 w-full items-center overflow-hidden transition-colors duration-100';
 
 function PrimaryItem({
   to,
@@ -57,14 +58,11 @@ function PrimaryItem({
       {({ isActive }) => (
         <>
           {isActive && (
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-1.5 left-0 w-0.5 bg-accent"
-            />
+            <span aria-hidden="true" className="bg-accent absolute inset-y-1.5 left-0 w-0.5" />
           )}
           <Icon className="size-5 shrink-0" aria-hidden="true" />
           {!isCollapsed && (
-            <span className="min-w-0 truncate whitespace-nowrap text-[13px] font-medium">
+            <span className="min-w-0 truncate text-[13px] font-medium whitespace-nowrap">
               {label}
             </span>
           )}
@@ -105,7 +103,7 @@ function SecondaryItem({
     >
       <Icon className="size-5 shrink-0" aria-hidden="true" />
       {!isCollapsed && (
-        <span className="min-w-0 truncate whitespace-nowrap text-[13px] font-medium">{label}</span>
+        <span className="min-w-0 truncate text-[13px] font-medium whitespace-nowrap">{label}</span>
       )}
     </Link>
   );
@@ -128,7 +126,7 @@ export function NavRail() {
     <nav
       aria-label="Workbench"
       className={cn(
-        'flex shrink-0 flex-col overflow-hidden border-r border-hairline bg-surface transition-[width] duration-200 motion-reduce:transition-none',
+        'border-hairline bg-surface flex shrink-0 flex-col overflow-hidden border-r transition-[width] duration-200 motion-reduce:transition-none',
         isCollapsed ? 'w-16' : 'w-52',
       )}
     >
@@ -138,18 +136,18 @@ export function NavRail() {
           aria-label={toggleLabel}
           aria-expanded={!isCollapsed}
           onClick={toggleNavRail}
-          className="flex h-12 w-full shrink-0 items-center justify-between gap-2 border-b border-hairline px-3 transition-colors duration-100 hover:bg-surface-2"
+          className="border-hairline hover:bg-surface-2 flex h-12 w-full shrink-0 items-center justify-between gap-2 border-b px-3 transition-colors duration-100"
         >
           <BrandMark className="size-6 shrink-0" />
           {!isCollapsed && (
-            <span className="min-w-0 flex-1 truncate text-left text-sm font-semibold tracking-tight text-ink">
+            <span className="text-ink min-w-0 flex-1 truncate text-left text-sm font-semibold tracking-tight">
               DataForge Studio
             </span>
           )}
           {isCollapsed ? (
-            <ChevronRight className="size-4 shrink-0 text-ink-dim" aria-hidden="true" />
+            <ChevronRight className="text-ink-dim size-4 shrink-0" aria-hidden="true" />
           ) : (
-            <ChevronLeft className="size-4 shrink-0 text-ink-dim" aria-hidden="true" />
+            <ChevronLeft className="text-ink-dim size-4 shrink-0" aria-hidden="true" />
           )}
         </button>
       </Tip>
@@ -160,7 +158,7 @@ export function NavRail() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-0.5 border-t border-hairline py-2">
+      <div className="border-hairline flex flex-col gap-0.5 border-t py-2">
         <SecondaryItem to="/" label="Home" icon={House} isCollapsed={isCollapsed} />
         <SecondaryItem to="/settings" label="Settings" icon={Settings} isCollapsed={isCollapsed} />
       </div>

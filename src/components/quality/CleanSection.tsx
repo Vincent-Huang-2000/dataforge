@@ -63,13 +63,7 @@ interface PreviewResult {
   changes: number;
 }
 
-export function CleanSection({
-  projectId,
-  style,
-}: {
-  projectId: string;
-  style?: CSSProperties;
-}) {
+export function CleanSection({ projectId, style }: { projectId: string; style?: CSSProperties }) {
   const [opts, setOpts] = useState<CleaningOptions>({ ...DEFAULT_CLEANING });
   const [busy, setBusy] = useState<'idle' | 'preview' | 'apply'>('idle');
   const [progress, setProgress] = useState(0);
@@ -155,7 +149,7 @@ export function CleanSection({
     <section className="panel animate-rise" style={style}>
       <div className="panel-header">
         <h2 className="tech-label">Clean</h2>
-        <span className="text-xs text-ink-faint">
+        <span className="text-ink-faint text-xs">
           Safe fixes are on by default. Destructive ones are opt-in.
         </span>
       </div>
@@ -171,31 +165,30 @@ export function CleanSection({
               aria-label={field.label}
             />
             <span className="flex min-w-0 flex-col">
-              <span className="text-[13px] font-medium text-ink">{field.label}</span>
-              <span className="text-xs text-ink-dim">{field.hint}</span>
+              <span className="text-ink text-[13px] font-medium">{field.label}</span>
+              <span className="text-ink-dim text-xs">{field.hint}</span>
             </span>
           </label>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-3 py-2">
+      <div className="border-hairline flex flex-wrap items-center gap-2 border-t px-3 py-2">
         <Button variant="outline" onClick={() => void runPreview()} disabled={busy !== 'idle'}>
           {busy === 'preview' ? <Spinner className="size-3.5" /> : <Eye />}
           Preview
         </Button>
         {preview && (
-          <span className="text-[13px] text-ink-dim">
-            <span className="font-mono tabular-nums text-ink">{fmtNum(preview.changed)}</span> of{' '}
-            <span className="font-mono tabular-nums">{fmtNum(preview.sampled)}</span> would change
-            (<span className="font-mono tabular-nums">{fmtNum(preview.changes)}</span> total
-            changes)
+          <span className="text-ink-dim text-[13px]">
+            <span className="text-ink font-mono tabular-nums">{fmtNum(preview.changed)}</span> of{' '}
+            <span className="font-mono tabular-nums">{fmtNum(preview.sampled)}</span> would change (
+            <span className="font-mono tabular-nums">{fmtNum(preview.changes)}</span> total changes)
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {busy === 'apply' && <Progress value={progress} className="w-28" />}
           <Button variant="solid" onClick={() => void runApply()} disabled={busy !== 'idle'}>
             {busy === 'apply' ? (
-              <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" />
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
             ) : (
               <Eraser />
             )}

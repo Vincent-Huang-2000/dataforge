@@ -185,9 +185,7 @@ export function InspectorPanel({
   const draftTokens = useExampleTokenCount(draftExample);
 
   const patchDraft = useCallback((patch: Partial<Draft>) => {
-    setDraftState((prev) =>
-      prev ? { ...prev, draft: { ...prev.draft, ...patch } } : prev,
-    );
+    setDraftState((prev) => (prev ? { ...prev, draft: { ...prev.draft, ...patch } } : prev));
   }, []);
 
   // Mirror dirtiness into the UI store so other surfaces (grid row clicks)
@@ -265,9 +263,7 @@ export function InspectorPanel({
       const patch = buildPatch(example.type, draft);
       await withUndo('Edit example', [example.id], () => updateExample(example.id, patch));
       setDraftState((prev) =>
-        prev && prev.id === example.id
-          ? { ...prev, baseline: JSON.stringify(prev.draft) }
-          : prev,
+        prev && prev.id === example.id ? { ...prev, baseline: JSON.stringify(prev.draft) } : prev,
       );
       toast.success('Saved');
     } catch (err) {
@@ -344,9 +340,7 @@ export function InspectorPanel({
         <div className="flex min-w-0 items-center gap-2">
           <span className="tech-label">Example</span>
           <Tip label={<span className="font-mono text-[11px]">{example.id}</span>}>
-            <span className="font-mono text-xs text-ink-dim">
-              {example.id.slice(0, 8)}
-            </span>
+            <span className="text-ink-dim font-mono text-xs">{example.id.slice(0, 8)}</span>
           </Tip>
           <TypeBadge type={example.type} />
         </div>
@@ -412,7 +406,7 @@ export function InspectorPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 hover:text-danger"
+              className="hover:text-danger h-7 w-7"
               onClick={() => setConfirmOpen(true)}
               aria-label="Delete example"
             >
@@ -446,7 +440,7 @@ export function InspectorPanel({
         </div>
       </div>
 
-      <div className="shrink-0 flex flex-col gap-1.5 border-b border-hairline px-3 py-2">
+      <div className="border-hairline flex shrink-0 flex-col gap-1.5 border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <Select
             value={example.split}
@@ -462,11 +456,11 @@ export function InspectorPanel({
             </SelectContent>
           </Select>
           <Tip label="Approximate count, o200k vocabulary">
-            <span className="font-mono text-xs tabular-nums text-ink-dim">
+            <span className="text-ink-dim font-mono text-xs tabular-nums">
               {fmtNum(draftTokens)} tok
             </span>
           </Tip>
-          <span className="ml-auto text-xs text-ink-faint">
+          <span className="text-ink-faint ml-auto text-xs">
             {fmtRelativeTime(example.updatedAt)}
           </span>
         </div>
@@ -474,14 +468,14 @@ export function InspectorPanel({
           {example.tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 rounded-(--radius-control) border border-hairline bg-surface-2 px-1.5 py-px font-mono text-[11px] text-ink-dim"
+              className="border-hairline bg-surface-2 text-ink-dim inline-flex items-center gap-1 rounded-(--radius-control) border px-1.5 py-px font-mono text-[11px]"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
                 aria-label={`Remove tag ${tag}`}
-                className="text-ink-faint transition-colors duration-100 hover:text-danger"
+                className="text-ink-faint hover:text-danger transition-colors duration-100"
               >
                 <X className="size-2.5" />
               </button>
@@ -505,7 +499,7 @@ export function InspectorPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 [scrollbar-gutter:stable]">
+      <div className="min-h-0 flex-1 [scrollbar-gutter:stable] overflow-y-auto overscroll-contain p-3">
         {draft ? (
           example.type === 'sft' ? (
             <ConversationEditor
@@ -527,11 +521,7 @@ export function InspectorPanel({
               onChange={patchDraft}
             />
           ) : (
-            <RlEditor
-              messages={draft.messages}
-              answer={draft.answer}
-              onChange={patchDraft}
-            />
+            <RlEditor messages={draft.messages} answer={draft.answer} onChange={patchDraft} />
           )
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -540,15 +530,13 @@ export function InspectorPanel({
         )}
       </div>
 
-      <div className="shrink-0 flex items-center gap-2 border-t border-hairline px-3 py-2">
-        {dirty && <span className="text-xs text-ink-dim">Unsaved changes</span>}
+      <div className="border-hairline flex shrink-0 items-center gap-2 border-t px-3 py-2">
+        {dirty && <span className="text-ink-dim text-xs">Unsaved changes</span>}
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="sm" disabled={!dirty || saving} onClick={revert}>
             Revert
           </Button>
-          {dirty && (
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-          )}
+          {dirty && <span aria-hidden="true" className="bg-accent size-1.5 rounded-full" />}
           <Tip label="Ctrl+S">
             <Button
               variant="solid"
@@ -575,7 +563,7 @@ export function InspectorPanel({
             rootRef.current?.focus();
           }}
         >
-          <p className="text-[13px] leading-relaxed text-ink-dim">
+          <p className="text-ink-dim text-[13px] leading-relaxed">
             This removes the example from the project.
           </p>
           <DialogFooter>

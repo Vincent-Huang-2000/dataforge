@@ -6,12 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Eraser, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  db,
-  estimateStorage,
-  requestPersistentStorage,
-  type StorageEstimate,
-} from '@/lib/db';
+import { db, estimateStorage, requestPersistentStorage, type StorageEstimate } from '@/lib/db';
 import { fmtBytes, fmtNum } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -69,17 +64,17 @@ export function StorageSection() {
   }
 
   return (
-    <div className="panel divide-y divide-hairline">
+    <div className="panel divide-hairline divide-y">
       <div className="px-3 py-2.5">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-sm text-ink">IndexedDB usage</span>
+          <span className="text-ink text-sm">IndexedDB usage</span>
           {estimate ? (
-            <span className="font-mono text-[13px] tabular-nums text-ink">
+            <span className="text-ink font-mono text-[13px] tabular-nums">
               {fmtBytes(estimate.usage)}{' '}
               <span className="text-ink-faint">of {fmtBytes(estimate.quota)}</span>
             </span>
           ) : (
-            <span className="text-[13px] text-ink-faint">Not available</span>
+            <span className="text-ink-faint text-[13px]">Not available</span>
           )}
         </div>
         <Progress
@@ -91,14 +86,13 @@ export function StorageSection() {
 
       <div className="flex items-center justify-between gap-3 px-3 py-2.5">
         <div className="min-w-0">
-          <div className="text-sm text-ink">Persistence</div>
-          <p className="text-[13px] text-ink-dim">
-            Persistent storage stops the browser from evicting your datasets under disk
-            pressure.
+          <div className="text-ink text-sm">Persistence</div>
+          <p className="text-ink-dim text-[13px]">
+            Persistent storage stops the browser from evicting your datasets under disk pressure.
           </p>
         </div>
         {persisted === null ? (
-          <span className="shrink-0 text-[13px] text-ink-faint">Checking…</span>
+          <span className="text-ink-faint shrink-0 text-[13px]">Checking…</span>
         ) : persisted ? (
           <Badge tone="ok" className="shrink-0">
             <ShieldCheck className="size-3 shrink-0" />
@@ -119,10 +113,9 @@ export function StorageSection() {
 
       <div className="flex items-center justify-between gap-3 px-3 py-2.5">
         <div className="min-w-0">
-          <div className="text-sm text-ink">AI response cache</div>
-          <p className="text-[13px] text-ink-dim">
-            Cached generations make interrupted runs resumable. Safe to clear at any
-            time.
+          <div className="text-ink text-sm">AI response cache</div>
+          <p className="text-ink-dim text-[13px]">
+            Cached generations make interrupted runs resumable. Safe to clear at any time.
           </p>
         </div>
         <Button

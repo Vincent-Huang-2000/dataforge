@@ -30,18 +30,18 @@ export function GeneratePage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-4xl flex-col gap-4 p-6">
         <header className="animate-rise" style={rise()}>
-          <h1 className="text-lg font-semibold text-ink">Generate</h1>
-          <p className="mt-0.5 text-[13px] text-ink-dim">
-            Synthetic data, enhancement, preference pairs and judging. Calls go straight from
-            this browser to your provider.
+          <h1 className="text-ink text-lg font-semibold">Generate</h1>
+          <p className="text-ink-dim mt-0.5 text-[13px]">
+            Synthetic data, enhancement, preference pairs and judging. Calls go straight from this
+            browser to your provider.
           </p>
         </header>
 
-        <div className="animate-rise sticky top-0 z-20 -my-2 bg-bg py-2" style={rise()}>
+        <div className="animate-rise bg-bg sticky top-0 z-20 -my-2 py-2" style={rise()}>
           <section className="panel">
             <div className="panel-header">
               <h2 className="tech-label">Model</h2>
-              <span className="text-xs text-ink-faint">Used by every section below.</span>
+              <span className="text-ink-faint text-xs">Used by every section below.</span>
             </div>
             <div className="p-3">
               <ProviderModelPicker value={provider} onChange={setProvider} />

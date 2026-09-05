@@ -7,11 +7,7 @@
  * `meta.synthetic = technique` and the new ids land on the job's
  * `params.createdIds`.
  */
-import {
-  createExample,
-  type Example,
-  type ProviderConfig,
-} from '@/engine/types';
+import { createExample, type Example, type ProviderConfig } from '@/engine/types';
 import {
   PERSONAS,
   buildEvolInstructPrompt,
@@ -117,9 +113,7 @@ export function parseGeneratedPairs(raw: unknown): GeneratedPair[] {
 function seedFromExample(example: Example): SeedPair | null {
   const instruction = example.messages.find((m) => m.role === 'user')?.content.trim() ?? '';
   if (instruction === '') return null;
-  const response = example.messages
-    .findLast((m) => m.role === 'assistant')
-    ?.content.trim();
+  const response = example.messages.findLast((m) => m.role === 'assistant')?.content.trim();
   return {
     instruction,
     ...(response !== undefined && response !== '' ? { response } : {}),

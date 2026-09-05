@@ -37,7 +37,7 @@ export function WorkbenchLayout() {
               Back to projects
             </Link>
           }
-          className="w-full max-w-md animate-rise"
+          className="animate-rise w-full max-w-md"
         />
       </div>
     );

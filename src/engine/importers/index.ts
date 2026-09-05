@@ -56,15 +56,7 @@ export type ParsedFile =
   | { kind: 'document'; text: string; title: string };
 
 /** Internal format token produced by {@link detectFormat}. */
-export type ImportFormat =
-  | 'jsonl'
-  | 'json'
-  | 'csv'
-  | 'parquet'
-  | 'xlsx'
-  | 'pdf'
-  | 'docx'
-  | 'text';
+export type ImportFormat = 'jsonl' | 'json' | 'csv' | 'parquet' | 'xlsx' | 'pdf' | 'docx' | 'text';
 
 const EXTENSION_FORMATS: Record<string, ImportFormat> = {
   jsonl: 'jsonl',
@@ -146,7 +138,10 @@ export function detectFormat(name: string, data: ArrayBuffer): ImportFormat {
 
   const text = decodeText(data).trim();
   if (text.startsWith('{') || text.startsWith('[')) {
-    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     const jsonlish = lines.length > 1 && lines.slice(0, 5).every((l) => l.startsWith('{'));
     return jsonlish ? 'jsonl' : 'json';
   }

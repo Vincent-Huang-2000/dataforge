@@ -45,7 +45,7 @@ const PROJECT_PAGES: { route: string; label: string; icon: LucideIcon }[] = [
 ];
 
 function GroupHeading({ children }: { children: string }) {
-  return <span className="tech-label block px-2.5 pb-1 pt-2">{children}</span>;
+  return <span className="tech-label block px-2.5 pt-2 pb-1">{children}</span>;
 }
 
 function PaletteItem({
@@ -68,9 +68,9 @@ function PaletteItem({
       disabled={disabled}
       onSelect={onSelect}
       className={cn(
-        'flex cursor-default select-none items-center gap-2.5 rounded-(--radius-control) px-2.5 py-1.5 text-sm text-ink-dim',
+        'text-ink-dim flex cursor-default items-center gap-2.5 rounded-(--radius-control) px-2.5 py-1.5 text-sm select-none',
         'data-[selected=true]:bg-surface-3 data-[selected=true]:text-ink data-[disabled=true]:opacity-45',
-        '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-faint',
+        '[&_svg]:text-ink-faint [&_svg]:size-4 [&_svg]:shrink-0',
       )}
     >
       {children}
@@ -111,25 +111,25 @@ export function CommandPalette() {
         title="Command palette"
         description="Jump to a page, switch projects, or run an action"
         className={cn(
-          'top-[15%] max-w-lg translate-y-0 overflow-hidden bg-surface-2',
+          'bg-surface-2 top-[15%] max-w-lg translate-y-0 overflow-hidden',
           '[&>.panel-header]:hidden',
           '[&>div:last-child]:max-h-none [&>div:last-child]:overflow-visible [&>div:last-child]:p-0',
         )}
       >
         <Command label="Command palette" loop>
-          <div className="flex items-center gap-2 border-b border-hairline px-3">
-            <Search className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
+          <div className="border-hairline flex items-center gap-2 border-b px-3">
+            <Search className="text-ink-faint size-4 shrink-0" aria-hidden="true" />
             <Command.Input
               autoFocus
               value={search}
               onValueChange={setSearch}
               placeholder="Type a command or search…"
-              className="h-10 w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint"
+              className="text-ink placeholder:text-ink-faint h-10 w-full bg-transparent text-sm outline-none"
             />
           </div>
 
           <Command.List className="max-h-80 overflow-y-auto overscroll-contain p-1.5">
-            <Command.Empty className="py-10 text-center text-[13px] text-ink-faint">
+            <Command.Empty className="text-ink-faint py-10 text-center text-[13px]">
               No matches for "{search}".
             </Command.Empty>
 
@@ -237,7 +237,7 @@ export function CommandPalette() {
             </Command.Group>
           </Command.List>
 
-          <div className="flex items-center gap-4 border-t border-hairline px-3 py-2 text-xs text-ink-faint">
+          <div className="border-hairline text-ink-faint flex items-center gap-4 border-t px-3 py-2 text-xs">
             <span className="flex items-center gap-1.5">
               <Kbd>↑</Kbd>
               <Kbd>↓</Kbd> Navigate

@@ -159,9 +159,11 @@ describe('parseHfUrl', () => {
   });
 
   it('parses canonical viewer paths with config and split', () => {
-    expect(
-      parseHfUrl('https://huggingface.co/datasets/squad/viewer/plain_text/train'),
-    ).toEqual({ id: 'squad', config: 'plain_text', split: 'train' });
+    expect(parseHfUrl('https://huggingface.co/datasets/squad/viewer/plain_text/train')).toEqual({
+      id: 'squad',
+      config: 'plain_text',
+      split: 'train',
+    });
   });
 
   it('parses canonical tree paths, ignoring the revision', () => {
@@ -379,18 +381,14 @@ describe('getRows', () => {
   });
 
   it('clamps the page length to the server maximum of 100', async () => {
-    const mock = stubFetch(() =>
-      Promise.resolve(jsonResponse({ rows: [], num_rows_total: 0 })),
-    );
+    const mock = stubFetch(() => Promise.resolve(jsonResponse({ rows: [], num_rows_total: 0 })));
     await getRows('a/b', 'default', 'train', 0, 5000);
     const calledUrl = new URL(String(mock.mock.calls[0]?.[0]));
     expect(calledUrl.searchParams.get('length')).toBe('100');
   });
 
   it('sends the bearer token when provided', async () => {
-    const mock = stubFetch(() =>
-      Promise.resolve(jsonResponse({ rows: [], num_rows_total: 0 })),
-    );
+    const mock = stubFetch(() => Promise.resolve(jsonResponse({ rows: [], num_rows_total: 0 })));
     await getRows('a/b', 'default', 'train', 0, 10, { hfToken: 'hf_secret' });
     const init = mock.mock.calls[0]?.[1];
     expect(init?.headers).toEqual({ Authorization: 'Bearer hf_secret' });
@@ -580,8 +578,8 @@ function stubShard(rows: unknown[]): void {
     slice: () => new ArrayBuffer(0),
   });
   hyparquetMocks.parquetMetadataAsync.mockResolvedValue({ num_rows: BigInt(rows.length) });
-  hyparquetMocks.parquetReadObjects.mockImplementation(
-    ({ rowEnd }: { rowEnd: number }) => Promise.resolve(rows.slice(0, rowEnd)),
+  hyparquetMocks.parquetReadObjects.mockImplementation(({ rowEnd }: { rowEnd: number }) =>
+    Promise.resolve(rows.slice(0, rowEnd)),
   );
 }
 

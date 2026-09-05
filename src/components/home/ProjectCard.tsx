@@ -70,13 +70,13 @@ export function ProjectCard({
 
   return (
     <>
-      <article className="panel group relative flex h-full flex-col gap-2 p-3 transition-colors duration-150 hover:border-hairline-strong">
+      <article className="panel group hover:border-hairline-strong relative flex h-full flex-col gap-2 p-3 transition-colors duration-150">
         <div className="flex items-start justify-between gap-2">
           <Link
             to={`/p/${project.id}/data`}
-            className="min-w-0 flex-1 outline-none after:absolute after:inset-0 after:rounded-(--radius-panel) after:content-[''] focus-visible:after:outline focus-visible:after:outline-accent"
+            className="focus-visible:after:outline-accent min-w-0 flex-1 outline-none after:absolute after:inset-0 after:rounded-(--radius-panel) after:content-[''] focus-visible:after:outline"
           >
-            <h3 className="truncate text-sm font-semibold text-ink transition-colors duration-100 group-hover:text-accent">
+            <h3 className="text-ink group-hover:text-accent truncate text-sm font-semibold transition-colors duration-100">
               {project.name}
             </h3>
           </Link>
@@ -85,7 +85,7 @@ export function ProjectCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="relative z-10 -mr-1 -mt-0.5"
+                className="relative z-10 -mt-0.5 -mr-1"
                 aria-label={`Actions for project ${project.name}`}
               >
                 <EllipsisVertical />
@@ -107,23 +107,23 @@ export function ProjectCard({
           </DropdownMenu>
         </div>
 
-        <p className="line-clamp-2 min-h-8 text-[13px] leading-4 text-ink-dim">
-          {project.description || <span className="italic text-ink-faint">No description</span>}
+        <p className="text-ink-dim line-clamp-2 min-h-8 text-[13px] leading-4">
+          {project.description || <span className="text-ink-faint italic">No description</span>}
         </p>
 
         <div className="flex min-w-0 items-center gap-2">
           <TypeBadge type={project.datasetType} />
-          <span className="inline-flex min-w-0 items-center gap-1 rounded-(--radius-control) border border-hairline px-1.5 py-px text-[11px] text-ink-dim">
-            <Cpu className="size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+          <span className="border-hairline text-ink-dim inline-flex min-w-0 items-center gap-1 rounded-(--radius-control) border px-1.5 py-px text-[11px]">
+            <Cpu className="text-ink-faint size-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{modelName}</span>
           </span>
         </div>
 
-        <div className="mt-auto flex items-center justify-between border-t border-hairline pt-2">
-          <span className="font-mono text-xs tabular-nums text-ink">
+        <div className="border-hairline mt-auto flex items-center justify-between border-t pt-2">
+          <span className="text-ink font-mono text-xs tabular-nums">
             {fmtNum(exampleCount)} <span className="text-ink-faint">examples</span>
           </span>
-          <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+          <span className="text-ink-faint font-mono text-[11px] tabular-nums">
             {fmtRelativeTime(project.updatedAt)}
           </span>
         </div>
@@ -154,14 +154,16 @@ export function ProjectCard({
 
       <Dialog open={dialog === 'delete'} onOpenChange={(o) => !o && setDialog(null)}>
         <DialogContent title="Delete project" description="This action is irreversible.">
-          <div className="flex items-start gap-2.5 rounded-(--radius-control) border border-danger/40 bg-danger/10 px-3 py-2.5">
-            <TriangleAlert className="mt-px size-4 shrink-0 text-danger" aria-hidden="true" />
-            <p className="text-[13px] leading-relaxed text-ink">
+          <div className="border-danger/40 bg-danger/10 flex items-start gap-2.5 rounded-(--radius-control) border px-3 py-2.5">
+            <TriangleAlert className="text-danger mt-px size-4 shrink-0" aria-hidden="true" />
+            <p className="text-ink text-[13px] leading-relaxed">
               Permanently delete <span className="font-semibold">{project.name}</span>
               {exampleCount ? (
                 <>
                   {' '}
-                  and its <span className="font-mono tabular-nums">{fmtNum(exampleCount)}</span>{' '}
+                  and its <span className="font-mono tabular-nums">
+                    {fmtNum(exampleCount)}
+                  </span>{' '}
                   examples
                 </>
               ) : null}

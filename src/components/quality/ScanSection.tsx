@@ -14,12 +14,7 @@ import { useFilteredExamples, type ExampleFilters } from '@/lib/hooks';
 import { analyzeExamples } from '@/lib/workerClient';
 import { cn, fmtNum } from '@/lib/utils';
 import { getModel } from '@/engine/registry';
-import type {
-  DatasetQualitySummary,
-  IssueSeverity,
-  IssueType,
-  Project,
-} from '@/engine/types';
+import type { DatasetQualitySummary, IssueSeverity, IssueType, Project } from '@/engine/types';
 
 import { Badge, HeatBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -149,10 +144,7 @@ export function ScanSection({
         count,
         severity: stats.severities.get(type) ?? FALLBACK_SEVERITY[type],
       }))
-      .sort(
-        (a, b) =>
-          SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || b.count - a.count,
-      );
+      .sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity] || b.count - a.count);
   }, [summary, stats]);
 
   async function runScan(): Promise<void> {
@@ -204,13 +196,11 @@ export function ScanSection({
       <div className="panel-header">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h2 className="tech-label">Quality scan</h2>
-          <span className="truncate text-xs text-ink-faint">
+          <span className="text-ink-faint truncate text-xs">
             {model ? (
               <>
                 Validating against {model.name}, seq len{' '}
-                <span className="font-mono tabular-nums">
-                  {fmtNum(model.recommendedSeqLen)}
-                </span>
+                <span className="font-mono tabular-nums">{fmtNum(model.recommendedSeqLen)}</span>
               </>
             ) : (
               'No target model set. Context checks skipped.'
@@ -219,7 +209,7 @@ export function ScanSection({
         </div>
         <Button variant="solid" size="sm" onClick={() => void runScan()} disabled={busy}>
           {busy ? (
-            <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" />
+            <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
           ) : (
             <Play />
           )}
@@ -228,16 +218,16 @@ export function ScanSection({
       </div>
 
       {phase === 'saving' && (
-        <div className="flex items-center gap-2 border-b border-hairline px-3 py-2">
+        <div className="border-hairline flex items-center gap-2 border-b px-3 py-2">
           <Progress value={progress} className="flex-1" />
-          <span className="w-10 text-right font-mono text-xs tabular-nums text-ink-faint">
+          <span className="text-ink-faint w-10 text-right font-mono text-xs tabular-nums">
             {Math.round(progress * 100)}%
           </span>
         </div>
       )}
 
       {stats.scored === 0 ? (
-        <p className="px-3 py-6 text-center text-[13px] text-ink-faint">
+        <p className="text-ink-faint px-3 py-6 text-center text-[13px]">
           No scores yet. Run a scan to grade every example.
         </p>
       ) : (
@@ -246,12 +236,12 @@ export function ScanSection({
             <div className="flex shrink-0 flex-col gap-1.5 sm:w-44">
               <span className="tech-label">Avg score</span>
               <div className="flex items-baseline gap-2">
-                <span className="font-mono text-[28px] font-medium leading-none tabular-nums text-ink">
+                <span className="text-ink font-mono text-[28px] leading-none font-medium tabular-nums">
                   {stats.avg == null ? '—' : stats.avg.toFixed(1)}
                 </span>
                 <HeatBadge score={stats.avg} />
               </div>
-              <span className="font-mono text-xs tabular-nums text-ink-faint">
+              <span className="text-ink-faint font-mono text-xs tabular-nums">
                 {fmtNum(stats.scored)} of {fmtNum(stats.total)} scored
               </span>
             </div>
@@ -259,7 +249,7 @@ export function ScanSection({
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <span className="tech-label">Distribution</span>
               <div
-                className="flex h-2 w-full overflow-hidden rounded-full bg-surface-3"
+                className="bg-surface-3 flex h-2 w-full overflow-hidden rounded-full"
                 role="img"
                 aria-label={`Score distribution: ${SCORE_BUCKETS.map(
                   (b, i) => `${stats.buckets[i]} ${b.label.toLowerCase()}`,
@@ -280,8 +270,8 @@ export function ScanSection({
                 {SCORE_BUCKETS.map((b, i) => (
                   <span key={b.key} className="flex items-center gap-1.5">
                     <span className={cn('size-2 rounded-[2px]', b.bar)} aria-hidden="true" />
-                    <span className="text-xs text-ink-dim">{b.label}</span>
-                    <span className="font-mono text-xs tabular-nums text-ink-faint">
+                    <span className="text-ink-dim text-xs">{b.label}</span>
+                    <span className="text-ink-faint font-mono text-xs tabular-nums">
                       {fmtNum(stats.buckets[i])}
                     </span>
                   </span>
@@ -291,14 +281,14 @@ export function ScanSection({
           </div>
 
           {issueRows.length === 0 ? (
-            <p className="flex items-center gap-1.5 border-t border-hairline px-3 py-2.5 text-[13px] text-ok">
+            <p className="border-hairline text-ok flex items-center gap-1.5 border-t px-3 py-2.5 text-[13px]">
               <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
               No issues found.
             </p>
           ) : (
-            <table className="w-full border-t border-hairline text-left">
+            <table className="border-hairline w-full border-t text-left">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="border-hairline border-b">
                   <th className="tech-label px-3 py-1.5 font-medium">Issue type</th>
                   <th className="tech-label py-1.5 font-medium">Severity</th>
                   <th className="tech-label py-1.5 text-right font-medium">Count</th>
@@ -307,18 +297,18 @@ export function ScanSection({
               </thead>
               <tbody>
                 {issueRows.map((row) => (
-                  <tr key={row.type} className="border-b border-hairline last:border-b-0">
-                    <td className="px-3 py-1.5 font-mono text-[13px] text-ink">{row.type}</td>
+                  <tr key={row.type} className="border-hairline border-b last:border-b-0">
+                    <td className="text-ink px-3 py-1.5 font-mono text-[13px]">{row.type}</td>
                     <td className="py-1.5">
                       <Badge tone={SEVERITY_TONE[row.severity]}>{row.severity}</Badge>
                     </td>
-                    <td className="py-1.5 text-right font-mono text-[13px] tabular-nums text-ink">
+                    <td className="text-ink py-1.5 text-right font-mono text-[13px] tabular-nums">
                       {fmtNum(row.count)}
                     </td>
                     <td className="px-3 py-1.5 text-right">
                       <Link
                         to="../data?issues=1"
-                        className="font-mono text-xs text-accent hover:underline"
+                        className="text-accent font-mono text-xs hover:underline"
                       >
                         View
                       </Link>

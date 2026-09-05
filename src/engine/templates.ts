@@ -22,7 +22,13 @@ import type { Message, Role, TemplateFamily, ToolCall, ToolCallStyle } from '@/e
  */
 export const SPECIAL_TOKENS: Record<TemplateFamily, string[]> = {
   chatml: ['<|im_start|>', '<|im_end|>'],
-  'kimi-chatml': ['<|im_system|>', '<|im_user|>', '<|im_assistant|>', '<|im_middle|>', '<|im_end|>'],
+  'kimi-chatml': [
+    '<|im_system|>',
+    '<|im_user|>',
+    '<|im_assistant|>',
+    '<|im_middle|>',
+    '<|im_end|>',
+  ],
   llama3: ['<|begin_of_text|>', '<|start_header_id|>', '<|end_header_id|>', '<|eot_id|>'],
   llama4: ['<|begin_of_text|>', '<|header_start|>', '<|header_end|>', '<|eot|>'],
   gemma: ['<start_of_turn>', '<end_of_turn>', '<bos>'],
@@ -212,11 +218,7 @@ function renderKimiChatml(msgs: PreparedMessage[], gen: boolean): string {
   return out;
 }
 
-function renderLlama(
-  msgs: PreparedMessage[],
-  gen: boolean,
-  family: 'llama3' | 'llama4',
-): string {
+function renderLlama(msgs: PreparedMessage[], gen: boolean, family: 'llama3' | 'llama4'): string {
   const [hStart, hEnd, eot] =
     family === 'llama3'
       ? ['<|start_header_id|>', '<|end_header_id|>', '<|eot_id|>']
@@ -362,7 +364,12 @@ function renderPhi4Mini(msgs: PreparedMessage[], gen: boolean): string {
   for (const m of msgs) {
     const body = m.role === 'assistant' ? assistantBody(m, 'phi4-mini') : m.content;
     // phi4-mini has no dedicated tool role token; tool results render as user.
-    const label = m.role === 'assistant' ? 'assistant' : m.role === 'user' || m.role === 'tool' ? 'user' : 'system';
+    const label =
+      m.role === 'assistant'
+        ? 'assistant'
+        : m.role === 'user' || m.role === 'tool'
+          ? 'user'
+          : 'system';
     out += `<|${label}|>${body}<|end|>`;
   }
   if (gen) out += '<|assistant|>';

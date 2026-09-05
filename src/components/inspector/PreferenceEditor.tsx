@@ -13,19 +13,10 @@ export interface PreferenceEditorProps {
   messages: Message[];
   chosen: Message[];
   rejected: Message[];
-  onChange: (patch: {
-    messages?: Message[];
-    chosen?: Message[];
-    rejected?: Message[];
-  }) => void;
+  onChange: (patch: { messages?: Message[]; chosen?: Message[]; rejected?: Message[] }) => void;
 }
 
-export function PreferenceEditor({
-  messages,
-  chosen,
-  rejected,
-  onChange,
-}: PreferenceEditorProps) {
+export function PreferenceEditor({ messages, chosen, rejected, onChange }: PreferenceEditorProps) {
   const promptToolCallIds = collectToolCallIds(messages);
 
   return (
@@ -55,9 +46,9 @@ export function PreferenceEditor({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className="overflow-hidden rounded-(--radius-panel) border border-ok/30">
-            <div className="flex items-center gap-1.5 border-b border-ok/30 bg-ok/5 px-2 py-1.5">
-              <ThumbsUp className="size-3.5 shrink-0 text-ok" />
+          <div className="border-ok/30 overflow-hidden rounded-(--radius-panel) border">
+            <div className="border-ok/30 bg-ok/5 flex items-center gap-1.5 border-b px-2 py-1.5">
+              <ThumbsUp className="text-ok size-3.5 shrink-0" />
               <span className="tech-label text-ok">Chosen</span>
             </div>
             <div className="p-2">
@@ -73,9 +64,9 @@ export function PreferenceEditor({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-(--radius-panel) border border-danger/30">
-            <div className="flex items-center gap-1.5 border-b border-danger/30 bg-danger/5 px-2 py-1.5">
-              <ThumbsDown className="size-3.5 shrink-0 text-danger" />
+          <div className="border-danger/30 overflow-hidden rounded-(--radius-panel) border">
+            <div className="border-danger/30 bg-danger/5 flex items-center gap-1.5 border-b px-2 py-1.5">
+              <ThumbsDown className="text-danger size-3.5 shrink-0" />
               <span className="tech-label text-danger">Rejected</span>
             </div>
             <div className="p-2">

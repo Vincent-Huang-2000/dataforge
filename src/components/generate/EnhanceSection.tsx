@@ -27,9 +27,17 @@ const UNDO_LIMIT = 20000;
 
 const OPS: { id: EnhanceOp; name: string; blurb: string }[] = [
   { id: 'improve-quality', name: 'Improve quality', blurb: 'Clearer, more accurate responses.' },
-  { id: 'add-reasoning', name: 'Add reasoning', blurb: 'Adds a thinking trace to the final answer.' },
+  {
+    id: 'add-reasoning',
+    name: 'Add reasoning',
+    blurb: 'Adds a thinking trace to the final answer.',
+  },
   { id: 'expand', name: 'Expand', blurb: 'Longer, more thorough responses.' },
-  { id: 'add-code-examples', name: 'Add code examples', blurb: 'Works code snippets into responses.' },
+  {
+    id: 'add-code-examples',
+    name: 'Add code examples',
+    blurb: 'Works code snippets into responses.',
+  },
   { id: 'simplify', name: 'Simplify', blurb: 'Shorter, plainer responses.' },
   { id: 'custom', name: 'Custom', blurb: 'Apply your own instruction.' },
 ];
@@ -127,7 +135,7 @@ export function EnhanceSection({
     <section className="panel">
       <div className="panel-header">
         <h2 className="tech-label">Enhance</h2>
-        <span className="text-[11px] text-ink-faint">Rewrites assistant turns in place.</span>
+        <span className="text-ink-faint text-[11px]">Rewrites assistant turns in place.</span>
       </div>
       <div className="flex flex-col gap-3 p-3">
         <div
@@ -147,7 +155,7 @@ export function EnhanceSection({
                 onClick={() => setOp(o.id)}
                 className={cn(
                   'rounded-(--radius-control) border px-2.5 py-2 text-left transition-colors duration-100',
-                  'focus-visible:outline focus-visible:outline-accent focus-visible:outline-offset-1',
+                  'focus-visible:outline-accent focus-visible:outline focus-visible:outline-offset-1',
                   'disabled:pointer-events-none disabled:opacity-45',
                   active
                     ? 'border-ember-600/60 bg-ember-500/10'
@@ -155,11 +163,14 @@ export function EnhanceSection({
                 )}
               >
                 <span
-                  className={cn('block text-[13px] font-medium', active ? 'text-accent' : 'text-ink')}
+                  className={cn(
+                    'block text-[13px] font-medium',
+                    active ? 'text-accent' : 'text-ink',
+                  )}
                 >
                   {o.name}
                 </span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-ink-dim">
+                <span className="text-ink-dim mt-0.5 block text-[11px] leading-snug">
                   {o.blurb}
                 </span>
               </button>
@@ -183,7 +194,7 @@ export function EnhanceSection({
         <TargetPicker ref={targetsRef} projectId={projectId} disabled={locked} />
 
         <div className="flex items-center gap-3">
-          <p className="text-[11px] text-ink-faint">
+          <p className="text-ink-faint text-[11px]">
             {ready
               ? 'Responses are cached locally. Re-running the same input is free.'
               : 'Pick a provider and model above to run this.'}
@@ -195,7 +206,11 @@ export function EnhanceSection({
             disabled={locked}
             onClick={() => void handleRun()}
           >
-            {busy ? <Spinner className="size-3 border-accent-ink/30 border-t-accent-ink" /> : <Wand2 />}
+            {busy ? (
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3" />
+            ) : (
+              <Wand2 />
+            )}
             Enhance
           </Button>
         </div>

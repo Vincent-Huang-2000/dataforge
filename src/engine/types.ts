@@ -233,33 +233,33 @@ export const DEFAULT_CLEANING: CleaningOptions = {
 // ---------------------------------------------------------------------------
 
 export type TemplateFamily =
-  | 'chatml'        // Qwen, SmolLM3, Nemotron 3, MiniMax, many community tunes
-  | 'kimi-chatml'   // <|im_user|>/<|im_assistant|>/<|im_middle|>
-  | 'llama3'        // <|start_header_id|>…<|eot_id|>
-  | 'llama4'        // <|header_start|>…<|eot|>
-  | 'gemma'         // <start_of_turn>; no system role before Gemma 4
-  | 'mistral-tekken'// [INST]/[SYSTEM_PROMPT]/[TOOL_CALLS]/[THINK]
-  | 'deepseek'      // <｜User｜>/<｜Assistant｜>
-  | 'harmony'       // gpt-oss channels (analysis/final)
-  | 'glm'           // [gMASK]<sop> + <|user|>/<|assistant|>/<|observation|>
-  | 'granite'       // <|start_of_role|>
-  | 'phi4'          // <|im_start|>role<|im_sep|>
-  | 'phi4-mini';    // <|user|>/<|assistant|>/<|end|>
+  | 'chatml' // Qwen, SmolLM3, Nemotron 3, MiniMax, many community tunes
+  | 'kimi-chatml' // <|im_user|>/<|im_assistant|>/<|im_middle|>
+  | 'llama3' // <|start_header_id|>…<|eot_id|>
+  | 'llama4' // <|header_start|>…<|eot|>
+  | 'gemma' // <start_of_turn>; no system role before Gemma 4
+  | 'mistral-tekken' // [INST]/[SYSTEM_PROMPT]/[TOOL_CALLS]/[THINK]
+  | 'deepseek' // <｜User｜>/<｜Assistant｜>
+  | 'harmony' // gpt-oss channels (analysis/final)
+  | 'glm' // [gMASK]<sop> + <|user|>/<|assistant|>/<|observation|>
+  | 'granite' // <|start_of_role|>
+  | 'phi4' // <|im_start|>role<|im_sep|>
+  | 'phi4-mini'; // <|user|>/<|assistant|>/<|end|>
 
 export type ReasoningMode =
   | 'none'
   | 'always-on'
-  | 'hybrid'               // toggle via enable_thinking / soft switches
-  | 'separate-checkpoints';// distinct Instruct vs Thinking models
+  | 'hybrid' // toggle via enable_thinking / soft switches
+  | 'separate-checkpoints'; // distinct Instruct vs Thinking models
 
 export type ToolCallStyle =
   | 'none'
-  | 'hermes'        // <tool_call>{json}</tool_call>
-  | 'openai'        // structured tool_calls JSON
-  | 'mistral'       // [TOOL_CALLS] tokens
-  | 'harmony-ts'    // TypeScript-namespace functions (gpt-oss)
-  | 'glm'           // <|observation|> role
-  | 'llama-ipython';// ipython role (Llama 3.1+)
+  | 'hermes' // <tool_call>{json}</tool_call>
+  | 'openai' // structured tool_calls JSON
+  | 'mistral' // [TOOL_CALLS] tokens
+  | 'harmony-ts' // TypeScript-namespace functions (gpt-oss)
+  | 'glm' // <|observation|> role
+  | 'llama-ipython'; // ipython role (Llama 3.1+)
 
 export interface ModelInfo {
   /** Registry slug, e.g. "qwen3.6-35b-a3b". */
@@ -299,11 +299,11 @@ export interface ModelInfo {
 
 export type SourceFormat =
   | 'openai-messages' // {"messages":[{role, content}]}
-  | 'alpaca'          // {instruction, input?, output}
-  | 'sharegpt'        // {"conversations":[{from, value}]}
-  | 'dpo-pairs'       // {prompt|question|messages, chosen, rejected}
-  | 'kto-unpaired'    // {prompt, completion, label}
-  | 'text'            // raw text rows
+  | 'alpaca' // {instruction, input?, output}
+  | 'sharegpt' // {"conversations":[{from, value}]}
+  | 'dpo-pairs' // {prompt|question|messages, chosen, rejected}
+  | 'kto-unpaired' // {prompt, completion, label}
+  | 'text' // raw text rows
   | 'unknown';
 
 export interface DetectedSchema {
@@ -327,15 +327,15 @@ export interface ImportResult {
 // ---------------------------------------------------------------------------
 
 export type FrameworkId =
-  | 'jsonl'          // canonical OpenAI messages JSONL (universal)
-  | 'axolotl'        // 0.17+: chat_template YAML + JSONL
-  | 'trl'            // 1.5+: column-typed JSONL + python script
-  | 'llama-factory'  // 0.9.5: dataset_info.json + data file
-  | 'ms-swift'       // 4.3: messages JSONL with swift keys
-  | 'unsloth'        // 2026.x: python notebook-style script
-  | 'openai-ft'      // OpenAI fine-tuning API JSONL (SFT or DPO shape)
-  | 'alpaca'         // legacy
-  | 'sharegpt';      // legacy
+  | 'jsonl' // canonical OpenAI messages JSONL (universal)
+  | 'axolotl' // 0.17+: chat_template YAML + JSONL
+  | 'trl' // 1.5+: column-typed JSONL + python script
+  | 'llama-factory' // 0.9.5: dataset_info.json + data file
+  | 'ms-swift' // 4.3: messages JSONL with swift keys
+  | 'unsloth' // 2026.x: python notebook-style script
+  | 'openai-ft' // OpenAI fine-tuning API JSONL (SFT or DPO shape)
+  | 'alpaca' // legacy
+  | 'sharegpt'; // legacy
 
 export interface ExportOptions {
   framework: FrameworkId;
@@ -365,13 +365,7 @@ export interface ExportBundle {
 // AI providers (BYOK)
 // ---------------------------------------------------------------------------
 
-export type ProviderId =
-  | 'openai'
-  | 'anthropic'
-  | 'gemini'
-  | 'openrouter'
-  | 'groq'
-  | 'ollama';
+export type ProviderId = 'openai' | 'anthropic' | 'gemini' | 'openrouter' | 'groq' | 'ollama';
 
 export interface ProviderConfig {
   id: ProviderId;

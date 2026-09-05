@@ -38,9 +38,7 @@ export function HomePage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const totalExamples = counts
-    ? Object.values(counts).reduce((sum, n) => sum + n, 0)
-    : undefined;
+  const totalExamples = counts ? Object.values(counts).reduce((sum, n) => sum + n, 0) : undefined;
 
   const loadDemo = async () => {
     if (creatingDemo) return;
@@ -77,24 +75,24 @@ export function HomePage() {
     <div className="min-h-screen">
       <SiteHeader />
 
-      <main className="mx-auto w-full max-w-5xl space-y-5 px-4 pb-16 pt-5">
+      <main className="mx-auto w-full max-w-5xl space-y-5 px-4 pt-5 pb-16">
         <StorageBanner />
 
-        <section className="texture-brushed animate-rise rounded-(--radius-panel) border border-hairline px-6 py-10 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">DataForge Studio</h1>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-dim">
+        <section className="texture-brushed animate-rise border-hairline rounded-(--radius-panel) border px-6 py-10 text-center">
+          <h1 className="text-ink text-2xl font-semibold tracking-tight">DataForge Studio</h1>
+          <p className="text-ink-dim mx-auto mt-2 max-w-md text-sm leading-relaxed">
             The fine-tuning dataset workbench. 100% local. Your data never leaves this browser.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-(--radius-control) border border-hairline bg-surface/70 px-2.5 py-1">
+            <span className="border-hairline bg-surface/70 inline-flex items-center gap-2 rounded-(--radius-control) border px-2.5 py-1">
               <span className="tech-label">Projects</span>
-              <span className="font-mono text-[13px] tabular-nums text-ink">
+              <span className="text-ink font-mono text-[13px] tabular-nums">
                 {fmtNum(projects?.length)}
               </span>
             </span>
-            <span className="inline-flex items-center gap-2 rounded-(--radius-control) border border-hairline bg-surface/70 px-2.5 py-1">
+            <span className="border-hairline bg-surface/70 inline-flex items-center gap-2 rounded-(--radius-control) border px-2.5 py-1">
               <span className="tech-label">Examples</span>
-              <span className="font-mono text-[13px] tabular-nums text-ink">
+              <span className="text-ink font-mono text-[13px] tabular-nums">
                 {fmtNum(totalExamples)}
               </span>
             </span>
@@ -107,7 +105,11 @@ export function HomePage() {
             title="Forge your first dataset"
             description="Create a project or load the demo to start building instruction, preference and RL training data, entirely in your browser."
             className="animate-rise"
-            action={<div className="flex flex-wrap items-center justify-center gap-2">{actionButtons}</div>}
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {actionButtons}
+              </div>
+            }
           />
         ) : projects ? (
           <section className="animate-rise space-y-3" aria-label="Projects">

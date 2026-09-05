@@ -96,7 +96,10 @@ function lfMessages(
   const out: { role: string; content: string }[] = [];
   for (const m of prepareMessages(messages, ctx, opts)) {
     if (m.role === 'assistant' && m.toolCalls !== undefined && m.toolCalls.length > 0) {
-      const calls = m.toolCalls.map((c) => ({ name: c.name, arguments: tryParseJson(c.arguments) }));
+      const calls = m.toolCalls.map((c) => ({
+        name: c.name,
+        arguments: tryParseJson(c.arguments),
+      }));
       out.push({
         role: LLAMA_FACTORY_TAGS.function_tag,
         content: JSON.stringify(calls.length === 1 ? calls[0] : calls),
@@ -116,7 +119,11 @@ function lfMessages(
 function lfTools(ex: Example): string | undefined {
   if (ex.tools === undefined || ex.tools.length === 0) return undefined;
   return JSON.stringify(
-    ex.tools.map((t) => ({ name: t.name, description: t.description ?? '', parameters: t.parameters })),
+    ex.tools.map((t) => ({
+      name: t.name,
+      description: t.description ?? '',
+      parameters: t.parameters,
+    })),
   );
 }
 
@@ -209,7 +216,8 @@ export function buildLlamaFactoryDatasetInfo(
 export function buildLlamaFactoryTrainYaml(ctx: RenderContext, dataFiles: SplitFileMap): string {
   const { options, model } = ctx;
   const slug = datasetSlug(options.projectName);
-  const stage = options.datasetType === 'preference' ? 'dpo' : options.datasetType === 'kto' ? 'kto' : 'sft';
+  const stage =
+    options.datasetType === 'preference' ? 'dpo' : options.datasetType === 'kto' ? 'kto' : 'sft';
 
   const config: Record<string, unknown> = {
     model_name_or_path: model?.hfId ?? 'REPLACE_WITH_BASE_MODEL',

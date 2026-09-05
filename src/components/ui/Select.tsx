@@ -16,16 +16,16 @@ export function SelectTrigger({
     <SelectPrimitive.Trigger
       className={cn(
         'flex h-9 w-full items-center justify-between gap-2 rounded-(--radius-control)',
-        'border border-hairline bg-surface-2 px-3 text-sm text-ink',
+        'border-hairline bg-surface-2 text-ink border px-3 text-sm',
         'hover:border-hairline-strong focus:border-accent/70 focus:outline-none',
-        'disabled:opacity-45 data-[placeholder]:text-ink-faint',
+        'data-[placeholder]:text-ink-faint disabled:opacity-45',
         className,
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon>
-        <ChevronDown className="size-4 text-ink-faint" />
+        <ChevronDown className="text-ink-faint size-4" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -62,7 +62,7 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex cursor-default select-none items-center gap-2 py-2 pl-8 pr-3 text-sm text-ink-dim outline-none',
+        'text-ink-dim relative flex cursor-default items-center gap-2 py-2 pr-3 pl-8 text-sm outline-none select-none',
         'data-[highlighted]:bg-surface-3 data-[highlighted]:text-ink',
         'data-[state=checked]:text-accent',
         className,
@@ -80,5 +80,5 @@ export function SelectItem({
 }
 
 export function SelectLabel({ children }: { children: ReactNode }) {
-  return <div className="tech-label px-3 pb-1 pt-2">{children}</div>;
+  return <div className="tech-label px-3 pt-2 pb-1">{children}</div>;
 }

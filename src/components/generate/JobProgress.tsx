@@ -67,15 +67,15 @@ export function JobProgress({ jobId, cancel }: ActiveJobHandle) {
   const active = job.status === 'pending' || job.status === 'running';
 
   return (
-    <div className="animate-rise flex flex-col gap-2 rounded-(--radius-control) border border-hairline bg-surface-2 p-3">
+    <div className="animate-rise border-hairline bg-surface-2 flex flex-col gap-2 rounded-(--radius-control) border p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
           {active && <Spinner className="size-3.5" />}
-          <span className="font-mono text-[13px] tabular-nums text-ink">
+          <span className="text-ink font-mono text-[13px] tabular-nums">
             {fmtNum(job.done)}/{fmtNum(job.total)} done
           </span>
           {job.failed > 0 && (
-            <span className="font-mono text-[13px] tabular-nums text-danger">
+            <span className="text-danger font-mono text-[13px] tabular-nums">
               {fmtNum(job.failed)} failed
             </span>
           )}
@@ -94,25 +94,25 @@ export function JobProgress({ jobId, cancel }: ActiveJobHandle) {
       </div>
 
       <Progress value={job.progress} />
-      <p className="font-mono text-xs tabular-nums text-ink-dim">{job.detail}</p>
+      <p className="text-ink-dim font-mono text-xs tabular-nums">{job.detail}</p>
 
       {job.status === 'completed' && (
-        <p role="status" className="flex items-center gap-1.5 text-[13px] text-ok">
+        <p role="status" className="text-ok flex items-center gap-1.5 text-[13px]">
           <CheckCircle2 className="size-4 shrink-0" aria-hidden />
           Done{job.failed > 0 ? `. ${fmtNum(job.failed)} items failed.` : '.'}
         </p>
       )}
       {job.status === 'completed' && job.failed > 0 && job.error !== undefined && (
-        <p className="text-xs leading-snug text-danger">{truncateError(job.error)}</p>
+        <p className="text-danger text-xs leading-snug">{truncateError(job.error)}</p>
       )}
       {job.status === 'failed' && (
-        <p role="status" className="flex items-center gap-1.5 text-[13px] text-danger">
+        <p role="status" className="text-danger flex items-center gap-1.5 text-[13px]">
           <XCircle className="size-4 shrink-0" aria-hidden />
           Failed{job.error ? `: ${truncateError(job.error)}` : '.'}
         </p>
       )}
       {job.status === 'cancelled' && (
-        <p role="status" className="flex items-center gap-1.5 text-[13px] text-ink-dim">
+        <p role="status" className="text-ink-dim flex items-center gap-1.5 text-[13px]">
           <Ban className="size-4 shrink-0" aria-hidden />
           Cancelled.
         </p>

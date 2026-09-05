@@ -22,9 +22,7 @@ export function StorageBanner() {
     let cancelled = false;
     const check = async () => {
       try {
-        const granted = navigator.storage?.persisted
-          ? await navigator.storage.persisted()
-          : false;
+        const granted = navigator.storage?.persisted ? await navigator.storage.persisted() : false;
         if (!cancelled) setPersisted(granted);
       } catch {
         if (!cancelled) setPersisted(false);
@@ -46,7 +44,9 @@ export function StorageBanner() {
         setPersisted(true);
         toast.success('Persistent storage enabled. Your datasets are safe from eviction.');
       } else {
-        toast.warning('The browser declined persistent storage. It may grant it after more use of this site.');
+        toast.warning(
+          'The browser declined persistent storage. It may grant it after more use of this site.',
+        );
       }
     } finally {
       setRequesting(false);
@@ -60,13 +60,19 @@ export function StorageBanner() {
   return (
     <div
       role="status"
-      className="animate-rise flex items-center gap-2.5 rounded-(--radius-panel) border border-warn/40 bg-warn/10 px-3 py-2"
+      className="animate-rise border-warn/40 bg-warn/10 flex items-center gap-2.5 rounded-(--radius-panel) border px-3 py-2"
     >
-      <TriangleAlert className="size-4 shrink-0 text-warn" aria-hidden="true" />
-      <p className="flex-1 text-[13px] text-ink">
+      <TriangleAlert className="text-warn size-4 shrink-0" aria-hidden="true" />
+      <p className="text-ink flex-1 text-[13px]">
         Browser storage is not persistent. Your datasets could be evicted.
       </p>
-      <Button size="xs" variant="outline" className="shrink-0" onClick={enable} disabled={requesting}>
+      <Button
+        size="xs"
+        variant="outline"
+        className="shrink-0"
+        onClick={enable}
+        disabled={requesting}
+      >
         Enable persistence
       </Button>
       <Button

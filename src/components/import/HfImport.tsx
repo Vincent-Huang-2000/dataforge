@@ -194,7 +194,7 @@ export function HfImport({ projectId }: { projectId: string }) {
           <div className="relative">
             <Search
               aria-hidden
-              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+              className="text-ink-faint pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
             />
             <Input
               id="hf-search"
@@ -228,32 +228,32 @@ export function HfImport({ projectId }: { projectId: string }) {
       {showResults && (
         <div className="panel overflow-hidden">
           {search.isLoading ? (
-            <div className="flex items-center gap-2 px-3 py-2.5 text-[13px] text-ink-dim">
+            <div className="text-ink-dim flex items-center gap-2 px-3 py-2.5 text-[13px]">
               <Spinner className="size-3.5" /> Searching…
             </div>
           ) : search.isError ? (
-            <p className="flex items-center gap-1.5 px-3 py-2.5 text-[13px] text-danger">
+            <p className="text-danger flex items-center gap-1.5 px-3 py-2.5 text-[13px]">
               <CircleAlert className="size-4 shrink-0" aria-hidden />
               Search failed. Check your connection.
             </p>
           ) : searchResults.length === 0 ? (
-            <p className="px-3 py-2.5 text-[13px] text-ink-faint">No datasets found.</p>
+            <p className="text-ink-faint px-3 py-2.5 text-[13px]">No datasets found.</p>
           ) : (
-            <ul className="divide-y divide-hairline/60">
+            <ul className="divide-hairline/60 divide-y">
               {searchResults.map((d) => (
                 <li key={d.id}>
                   <button
                     type="button"
                     onClick={() => selectDataset({ id: d.id })}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors duration-100 hover:bg-surface-2"
+                    className="hover:bg-surface-2 flex w-full items-center gap-3 px-3 py-2 text-left transition-colors duration-100"
                   >
-                    <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink">
+                    <span className="text-ink min-w-0 flex-1 truncate font-mono text-[13px]">
                       {d.id}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums text-ink-faint">
+                    <span className="text-ink-faint flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums">
                       <Download className="size-3.5" aria-hidden /> {fmtNum(d.downloads)}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums text-ink-faint">
+                    <span className="text-ink-faint flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums">
                       <Heart className="size-3.5" aria-hidden /> {fmtNum(d.likes)}
                     </span>
                   </button>
@@ -269,7 +269,7 @@ export function HfImport({ projectId }: { projectId: string }) {
           <div className="panel-header">
             <div className="flex min-w-0 items-center gap-2">
               <h3 className="tech-label">Dataset</h3>
-              <span className="truncate font-mono text-[13px] text-ink">{selected.id}</span>
+              <span className="text-ink truncate font-mono text-[13px]">{selected.id}</span>
             </div>
             <Button
               variant="ghost"
@@ -288,12 +288,12 @@ export function HfImport({ projectId }: { projectId: string }) {
 
           <div className="flex flex-col gap-3 p-3">
             {info.isLoading && (
-              <div className="flex items-center gap-2 text-[13px] text-ink-dim">
+              <div className="text-ink-dim flex items-center gap-2 text-[13px]">
                 <Spinner className="size-3.5" /> Loading dataset info…
               </div>
             )}
             {info.isError && (
-              <p className="flex items-start gap-1.5 text-[13px] text-danger">
+              <p className="text-danger flex items-start gap-1.5 text-[13px]">
                 <CircleAlert className="mt-px size-4 shrink-0" aria-hidden />
                 {info.error instanceof Error ? info.error.message : 'Could not load dataset info.'}
               </p>
@@ -337,14 +337,14 @@ export function HfImport({ projectId }: { projectId: string }) {
                 </div>
 
                 {config && split && (
-                  <div className="rounded-(--radius-control) border border-hairline bg-surface-2">
-                    <p className="tech-label border-b border-hairline px-2.5 py-1.5">First rows</p>
+                  <div className="border-hairline bg-surface-2 rounded-(--radius-control) border">
+                    <p className="tech-label border-hairline border-b px-2.5 py-1.5">First rows</p>
                     {rowsPreview.isLoading ? (
-                      <div className="flex items-center gap-2 px-2.5 py-2 text-[13px] text-ink-dim">
+                      <div className="text-ink-dim flex items-center gap-2 px-2.5 py-2 text-[13px]">
                         <Spinner className="size-3.5" /> Loading rows…
                       </div>
                     ) : rowsPreview.isError ? (
-                      <p className="flex items-center gap-1.5 px-2.5 py-2 text-[13px] text-danger">
+                      <p className="text-danger flex items-center gap-1.5 px-2.5 py-2 text-[13px]">
                         <CircleAlert className="size-4 shrink-0" aria-hidden />
                         Row preview unavailable.
                       </p>
@@ -353,7 +353,7 @@ export function HfImport({ projectId }: { projectId: string }) {
                         {rowsPreview.data?.rows.map((row, i) => (
                           <li
                             key={i}
-                            className="truncate border-b border-hairline/60 px-2.5 py-1.5 font-mono text-xs text-ink-dim last:border-b-0"
+                            className="border-hairline/60 text-ink-dim truncate border-b px-2.5 py-1.5 font-mono text-xs last:border-b-0"
                           >
                             {rowSnippet(row)}
                           </li>
@@ -395,7 +395,7 @@ export function HfImport({ projectId }: { projectId: string }) {
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-ink-faint">0 imports everything.</p>
+                <p className="text-ink-faint text-xs">0 imports everything.</p>
 
                 {busy && progress && (
                   <div className="flex items-center gap-3">
@@ -403,7 +403,7 @@ export function HfImport({ projectId }: { projectId: string }) {
                       value={progress.total > 0 ? progress.done / progress.total : 0}
                       className="min-w-0 flex-1"
                     />
-                    <span className="shrink-0 font-mono text-xs tabular-nums text-ink-dim">
+                    <span className="text-ink-dim shrink-0 font-mono text-xs tabular-nums">
                       {fmtNum(progress.done)} / {fmtNum(progress.total)} rows
                     </span>
                   </div>

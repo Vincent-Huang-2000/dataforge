@@ -222,9 +222,9 @@ describe('renderConversation — control-token ordering on multi-turn input', ()
   it('emits BOS exactly once (llama3, gemma, deepseek, mistral)', () => {
     expect(renderConversation(fiveTurn, 'llama3').match(/<\|begin_of_text\|>/g)).toHaveLength(1);
     expect(renderConversation(fiveTurn, 'gemma').match(/<bos>/g)).toHaveLength(1);
-    expect(
-      renderConversation(fiveTurn, 'deepseek').match(/<｜begin▁of▁sentence｜>/g),
-    ).toHaveLength(1);
+    expect(renderConversation(fiveTurn, 'deepseek').match(/<｜begin▁of▁sentence｜>/g)).toHaveLength(
+      1,
+    );
     expect(renderConversation(fiveTurn, 'mistral-tekken').startsWith('<s>')).toBe(true);
   });
 
@@ -534,9 +534,9 @@ describe('reasoningToInline', () => {
 
   it('returns content unchanged when there is no reasoning', () => {
     expect(reasoningToInline({ role: 'assistant', content: 'Plain.' }, 'chatml')).toBe('Plain.');
-    expect(reasoningToInline({ role: 'assistant', content: 'Plain.', reasoning: '' }, 'chatml')).toBe(
-      'Plain.',
-    );
+    expect(
+      reasoningToInline({ role: 'assistant', content: 'Plain.', reasoning: '' }, 'chatml'),
+    ).toBe('Plain.');
   });
 });
 

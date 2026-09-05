@@ -18,12 +18,7 @@ import type { ProviderSelection } from '@/components/shared/ProviderModelPicker'
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Controls';
-import {
-  JobProgress,
-  jobCreatedIds,
-  undoCreatedAction,
-  type ActiveJobHandle,
-} from './JobProgress';
+import { JobProgress, jobCreatedIds, undoCreatedAction, type ActiveJobHandle } from './JobProgress';
 import { TargetPicker, type TargetPickerHandle } from './TargetPicker';
 
 const TECHNIQUES: { id: SyntheticTechnique; name: string; blurb: string }[] = [
@@ -125,7 +120,7 @@ export function SyntheticSection({
     <section className="panel">
       <div className="panel-header">
         <h2 className="tech-label">Synthetic data</h2>
-        <span className="text-xs text-ink-faint">Creates new examples in this project.</span>
+        <span className="text-ink-faint text-xs">Creates new examples in this project.</span>
       </div>
       <div className="flex flex-col gap-3 p-3">
         <div
@@ -145,7 +140,7 @@ export function SyntheticSection({
                 onClick={() => setTechnique(t.id)}
                 className={cn(
                   'rounded-(--radius-control) border px-2.5 py-2 text-left transition-colors duration-100',
-                  'focus-visible:outline focus-visible:outline-accent focus-visible:outline-offset-1',
+                  'focus-visible:outline-accent focus-visible:outline focus-visible:outline-offset-1',
                   'disabled:pointer-events-none disabled:opacity-45',
                   active
                     ? 'border-ember-600/60 bg-ember-500/10'
@@ -153,13 +148,14 @@ export function SyntheticSection({
                 )}
               >
                 <span
-                  className={cn('block text-[13px] font-medium', active ? 'text-accent' : 'text-ink')}
+                  className={cn(
+                    'block text-[13px] font-medium',
+                    active ? 'text-accent' : 'text-ink',
+                  )}
                 >
                   {t.name}
                 </span>
-                <span className="mt-0.5 block text-xs leading-snug text-ink-dim">
-                  {t.blurb}
-                </span>
+                <span className="text-ink-dim mt-0.5 block text-xs leading-snug">{t.blurb}</span>
               </button>
             );
           })}
@@ -184,7 +180,7 @@ export function SyntheticSection({
               <Label htmlFor={tempId} className="mb-0">
                 Temperature
               </Label>
-              <span className="font-mono text-xs tabular-nums text-ink">
+              <span className="text-ink font-mono text-xs tabular-nums">
                 {temperature.toFixed(2)}
               </span>
             </div>
@@ -197,16 +193,14 @@ export function SyntheticSection({
               value={temperature}
               onChange={(e) => setTemperature(Number(e.target.value))}
               disabled={locked}
-              className="mt-3 block w-full cursor-pointer accent-accent disabled:opacity-45"
+              className="accent-accent mt-3 block w-full cursor-pointer disabled:opacity-45"
             />
           </div>
         </div>
 
         {needsTopic && (
           <div>
-            <Label htmlFor={topicId}>
-              Topic{technique === 'persona' ? ' (optional)' : ''}
-            </Label>
+            <Label htmlFor={topicId}>Topic{technique === 'persona' ? ' (optional)' : ''}</Label>
             <Input
               id={topicId}
               value={topic}
@@ -228,9 +222,7 @@ export function SyntheticSection({
 
         <div className="flex items-center gap-3">
           {!ready && (
-            <p className="text-xs text-ink-faint">
-              Pick a provider and model above to run this.
-            </p>
+            <p className="text-ink-faint text-xs">Pick a provider and model above to run this.</p>
           )}
           <Button
             variant="solid"
@@ -239,7 +231,11 @@ export function SyntheticSection({
             disabled={locked}
             onClick={() => void handleRun()}
           >
-            {busy ? <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" /> : <Sparkles />}
+            {busy ? (
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
+            ) : (
+              <Sparkles />
+            )}
             Generate
           </Button>
         </div>

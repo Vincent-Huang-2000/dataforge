@@ -9,13 +9,7 @@
  * Runtime-environment agnostic: no DOM, no React.
  */
 
-import type {
-  DatasetType,
-  ExportOptions,
-  FrameworkId,
-  ModelInfo,
-  SplitName,
-} from '@/engine/types';
+import type { DatasetType, ExportOptions, FrameworkId, ModelInfo, SplitName } from '@/engine/types';
 import { SPLITS } from '@/engine/types';
 import type { RenderContext } from './jsonl';
 import { buildMsSwiftCommand } from './msSwift';
@@ -142,9 +136,14 @@ function openAiFtSnippet(options: ExportOptions, hasValidation: boolean): string
   if (options.datasetType === 'preference') {
     jobArgs.push('    method={"type": "dpo", "dpo": {"hyperparameters": {"beta": 0.1}}},');
   }
-  return [...upload, '', 'job = client.fine_tuning.jobs.create(', ...jobArgs, ')', 'print(job.id)'].join(
-    '\n',
-  );
+  return [
+    ...upload,
+    '',
+    'job = client.fine_tuning.jobs.create(',
+    ...jobArgs,
+    ')',
+    'print(job.id)',
+  ].join('\n');
 }
 
 /** Framework-specific install + train section. */
@@ -210,7 +209,9 @@ function frameworkSection(
         '',
         codeBlock(
           'bash',
-          ['pip install "llamafactory==0.9.5"', 'llamafactory-cli train llamafactory.yaml'].join('\n'),
+          ['pip install "llamafactory==0.9.5"', 'llamafactory-cli train llamafactory.yaml'].join(
+            '\n',
+          ),
         ),
         '',
         'Keep `dataset_info.json` next to `llamafactory.yaml` (the config sets `dataset_dir: .`).',
@@ -222,7 +223,10 @@ function frameworkSection(
         '',
         codeBlock('bash', 'pip install "ms-swift==4.3.*"'),
         '',
-        codeBlock('bash', buildMsSwiftCommand({ options, model } satisfies RenderContext, 'data/train.jsonl')),
+        codeBlock(
+          'bash',
+          buildMsSwiftCommand({ options, model } satisfies RenderContext, 'data/train.jsonl'),
+        ),
       ].join('\n');
     case 'unsloth':
       return [

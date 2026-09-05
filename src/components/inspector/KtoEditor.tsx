@@ -13,11 +13,7 @@ export interface KtoEditorProps {
   completion: Message[];
   /** true = desirable, false = undesirable. */
   label: boolean;
-  onChange: (patch: {
-    messages?: Message[];
-    completion?: Message[];
-    label?: boolean;
-  }) => void;
+  onChange: (patch: { messages?: Message[]; completion?: Message[]; label?: boolean }) => void;
 }
 
 export function KtoEditor({ messages, completion, label, onChange }: KtoEditorProps) {
@@ -45,19 +41,19 @@ export function KtoEditor({ messages, completion, label, onChange }: KtoEditorPr
         />
       </section>
 
-      <div className="flex items-center gap-2.5 rounded-(--radius-panel) border border-hairline bg-surface-2 px-3 py-2">
+      <div className="border-hairline bg-surface-2 flex items-center gap-2.5 rounded-(--radius-panel) border px-3 py-2">
         <Switch
           checked={label}
           onCheckedChange={(checked) => onChange({ label: checked })}
           aria-label="Desirable response"
         />
         {label ? (
-          <span className="flex items-center gap-1.5 text-[13px] font-medium text-ok">
+          <span className="text-ok flex items-center gap-1.5 text-[13px] font-medium">
             <ThumbsUp className="size-4 shrink-0" />
             Desirable response
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 text-[13px] font-medium text-danger">
+          <span className="text-danger flex items-center gap-1.5 text-[13px] font-medium">
             <ThumbsDown className="size-4 shrink-0" />
             Undesirable response
           </span>

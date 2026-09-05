@@ -61,9 +61,7 @@ describe('exactDuplicates', () => {
       ex('c', '  HELLO\tWORLD  '),
       ex('d', 'something else entirely'),
     ]);
-    expect(groups).toEqual([
-      { keepId: 'a', dropIds: ['b', 'c'], reason: 'exact', similarity: 1 },
-    ]);
+    expect(groups).toEqual([{ keepId: 'a', dropIds: ['b', 'c'], reason: 'exact', similarity: 1 }]);
   });
 
   it('returns no groups for distinct texts', () => {
@@ -96,11 +94,13 @@ describe('exactDuplicates', () => {
         rejected: [{ role: 'assistant', content: 'meh' }],
       });
     // Same prompt, different chosen — NOT duplicates.
-    expect(exactDuplicates([samePrompt('a', 'great answer'), samePrompt('b', 'other answer')]))
-      .toEqual([]);
+    expect(
+      exactDuplicates([samePrompt('a', 'great answer'), samePrompt('b', 'other answer')]),
+    ).toEqual([]);
     // Same prompt, same chosen — duplicates.
-    expect(exactDuplicates([samePrompt('c', 'great answer'), samePrompt('d', 'great answer')]))
-      .toHaveLength(1);
+    expect(
+      exactDuplicates([samePrompt('c', 'great answer'), samePrompt('d', 'great answer')]),
+    ).toHaveLength(1);
     // Same content, different reasoning — NOT duplicates.
     const withReasoning = (id: string, reasoning: string): Example =>
       createExample({
@@ -111,8 +111,9 @@ describe('exactDuplicates', () => {
           { role: 'assistant', content: 'a', reasoning },
         ],
       });
-    expect(exactDuplicates([withReasoning('e', 'because x'), withReasoning('f', 'because y')]))
-      .toEqual([]);
+    expect(
+      exactDuplicates([withReasoning('e', 'because x'), withReasoning('f', 'because y')]),
+    ).toEqual([]);
   });
 
   it('distinguishes by tool-call arguments', () => {
@@ -122,11 +123,19 @@ describe('exactDuplicates', () => {
         projectId: PROJECT,
         messages: [
           { role: 'user', content: 'look it up' },
-          { role: 'assistant', content: '', toolCalls: [{ id: 'call_1', name: 'search', arguments: args }] },
+          {
+            role: 'assistant',
+            content: '',
+            toolCalls: [{ id: 'call_1', name: 'search', arguments: args }],
+          },
         ],
       });
-    expect(exactDuplicates([withCall('a', '{"q":"cats"}'), withCall('b', '{"q":"dogs"}')])).toEqual([]);
-    expect(exactDuplicates([withCall('c', '{"q":"cats"}'), withCall('d', '{"q":"cats"}')])).toHaveLength(1);
+    expect(exactDuplicates([withCall('a', '{"q":"cats"}'), withCall('b', '{"q":"dogs"}')])).toEqual(
+      [],
+    );
+    expect(
+      exactDuplicates([withCall('c', '{"q":"cats"}'), withCall('d', '{"q":"cats"}')]),
+    ).toHaveLength(1);
   });
 });
 
@@ -251,7 +260,10 @@ describe('decontaminate', () => {
     expect(hits[0].benchmarkName).toBe('GSM8K');
     expect(hits[0].matchedNgram.split(' ')).toHaveLength(DECONTAMINATION_NGRAM_SIZE);
     // The matched n-gram is verbatim from the planted question (normalized).
-    const normalizedJanet = janet.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const normalizedJanet = janet
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
     expect(normalizedJanet).toContain(hits[0].matchedNgram);
   });
 
@@ -307,8 +319,9 @@ describe('decontaminate', () => {
 
   it('skips benchmark items below the 5-word floor', () => {
     const benchmark = { name: 'tiny', items: ['the pleura', 'who am i'] };
-    expect(decontaminate([ex('a', 'the pleura is a membrane and who am i to argue')], benchmark))
-      .toEqual([]);
+    expect(
+      decontaminate([ex('a', 'the pleura is a membrane and who am i to argue')], benchmark),
+    ).toEqual([]);
   });
 
   it('reports at most one hit per example', () => {
@@ -336,7 +349,10 @@ describe('BUILTIN_BENCHMARK_SAMPLES', () => {
   it('every item is non-empty and indexable (>= 5 words)', () => {
     for (const benchmark of BUILTIN_BENCHMARK_SAMPLES) {
       for (const item of benchmark.items) {
-        const words = item.toLowerCase().split(/[^\p{L}\p{N}]+/gu).filter((w) => w.length > 0);
+        const words = item
+          .toLowerCase()
+          .split(/[^\p{L}\p{N}]+/gu)
+          .filter((w) => w.length > 0);
         expect(words.length).toBeGreaterThanOrEqual(5);
       }
     }
@@ -409,9 +425,7 @@ describe('performance', () => {
     const elapsed = performance.now() - start;
 
     expect(exact.some((g) => g.dropIds.includes('perf-exact'))).toBe(true);
-    expect(
-      near.some((g) => [g.keepId, ...g.dropIds].includes('perf-near')),
-    ).toBe(true);
+    expect(near.some((g) => [g.keepId, ...g.dropIds].includes('perf-near'))).toBe(true);
     expect(contamination).toEqual([]);
     expect(elapsed).toBeLessThan(10_000);
   });

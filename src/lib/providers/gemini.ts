@@ -6,12 +6,7 @@
  * `model` role, `jsonMode` to `generationConfig.responseMimeType` and
  * thinking parts (`part.thought === true`) to {@link ChatResult.reasoning}.
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 import {
   asArray,
@@ -30,9 +25,7 @@ function apiHeaders(config: ProviderConfig): Record<string, string> {
 
 /** Map a canonical request onto a generateContent body. */
 function buildBody(req: ChatRequest): Record<string, unknown> {
-  const systemTexts = req.messages
-    .filter((m) => m.role === 'system')
-    .map((m) => m.content);
+  const systemTexts = req.messages.filter((m) => m.role === 'system').map((m) => m.content);
   const contents = req.messages
     .filter((m) => m.role !== 'system')
     .map((m) => ({

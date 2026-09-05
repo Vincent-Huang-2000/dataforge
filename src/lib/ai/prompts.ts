@@ -23,12 +23,7 @@ export interface PromptPair {
 
 /** Enhancement operations supported by {@link buildEnhancePrompt}. */
 export type EnhanceOp =
-  | 'improve-quality'
-  | 'add-reasoning'
-  | 'expand'
-  | 'add-code-examples'
-  | 'simplify'
-  | 'custom';
+  'improve-quality' | 'add-reasoning' | 'expand' | 'add-code-examples' | 'simplify' | 'custom';
 
 /** Output style for document-grounded generation. */
 export type DocGenStyle = 'qa' | 'instruction' | 'summary';
@@ -363,7 +358,8 @@ export interface PersonaPromptOptions {
  * @throws Error when no personas are provided.
  */
 export function buildPersonaPrompt(opts: PersonaPromptOptions): PromptPair {
-  if (opts.personas.length === 0) throw new Error('persona generation requires at least one persona');
+  if (opts.personas.length === 0)
+    throw new Error('persona generation requires at least one persona');
   const topic = opts.topic?.trim();
   const user = [
     'Adopt each of these personas in turn:',

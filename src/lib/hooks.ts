@@ -4,24 +4,14 @@
  */
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import type {
-  DatasetType,
-  Example,
-  Job,
-  Project,
-  ProviderConfig,
-  SplitName,
-} from '@/engine/types';
+import type { DatasetType, Example, Job, Project, ProviderConfig, SplitName } from '@/engine/types';
 
 export function useProjects(): Project[] | undefined {
   return useLiveQuery(() => db.projects.orderBy('updatedAt').reverse().toArray(), []);
 }
 
 export function useProject(projectId: string | undefined): Project | undefined {
-  return useLiveQuery(
-    () => (projectId ? db.projects.get(projectId) : undefined),
-    [projectId],
-  );
+  return useLiveQuery(() => (projectId ? db.projects.get(projectId) : undefined), [projectId]);
 }
 
 export function useProjectCounts(): Record<string, number> | undefined {
@@ -79,8 +69,7 @@ export function matchesFilters(e: Example, f: ExampleFilters): boolean {
   if (f.type && f.type !== 'all' && e.type !== f.type) return false;
   if (f.flaggedOnly && !e.flagged) return false;
   if (f.unreviewedOnly && e.reviewed) return false;
-  if (f.maxScore != null && (e.qualityScore == null || e.qualityScore > f.maxScore))
-    return false;
+  if (f.maxScore != null && (e.qualityScore == null || e.qualityScore > f.maxScore)) return false;
   if (f.withIssuesOnly && e.qualityIssues.length === 0) return false;
   if (f.tag && !e.tags.includes(f.tag)) return false;
   if (f.search) {

@@ -143,7 +143,12 @@ describe('rowsToExamples — openai-messages', () => {
               },
             ],
           },
-          { role: 'tool', content: '{"temp":21}', tool_call_id: 'call_abc123', name: 'get_weather' },
+          {
+            role: 'tool',
+            content: '{"temp":21}',
+            tool_call_id: 'call_abc123',
+            name: 'get_weather',
+          },
           { role: 'assistant', content: 'It is 21C.', weight: 0 },
         ],
       },
@@ -249,7 +254,10 @@ describe('rowsToExamples — openai-messages', () => {
         messages: [
           {
             role: 'user',
-            content: [{ type: 'text', text: 'Hello ' }, { type: 'text', text: 'world' }],
+            content: [
+              { type: 'text', text: 'Hello ' },
+              { type: 'text', text: 'world' },
+            ],
           },
           { role: 'assistant', content: null },
         ],
@@ -426,7 +434,9 @@ describe('rowsToExamples — alpaca', () => {
 
 describe('rowsToExamples — dpo-pairs', () => {
   it('converts string prompts and continuations to preference examples', () => {
-    const rows = [{ prompt: 'Best color?', chosen: 'Blue.', rejected: 'No idea.', system: 'Opine.' }];
+    const rows = [
+      { prompt: 'Best color?', chosen: 'Blue.', rejected: 'No idea.', system: 'Opine.' },
+    ];
     const [example] = importRows(rows).examples;
     expect(example.type).toBe('preference');
     expect(example.messages).toEqual([
@@ -465,7 +475,10 @@ describe('rowsToExamples — dpo-pairs', () => {
 
   it('skips rows missing chosen or rejected', () => {
     const result = rowsToExamples(
-      [{ prompt: 'Q', chosen: 'A' }, { prompt: 'Q', chosen: 'A', rejected: 'B' }],
+      [
+        { prompt: 'Q', chosen: 'A' },
+        { prompt: 'Q', chosen: 'A', rejected: 'B' },
+      ],
       schemaOf('dpo-pairs'),
       PROJECT,
     );
@@ -502,7 +515,10 @@ describe('rowsToExamples — kto-unpaired', () => {
 
   it('coerces 0/1 labels when the schema is forced', () => {
     const result = rowsToExamples(
-      [{ prompt: 'Q', completion: 'A', label: 1 }, { prompt: 'Q', completion: 'B', label: 0 }],
+      [
+        { prompt: 'Q', completion: 'A', label: 1 },
+        { prompt: 'Q', completion: 'B', label: 0 },
+      ],
       schemaOf('kto-unpaired'),
       PROJECT,
     );
@@ -590,8 +606,18 @@ describe('rowsToExamples — text and unknown', () => {
 
   it('classifies rows individually under an unknown schema', () => {
     const rows = [
-      { messages: [{ role: 'user', content: 'Q' }, { role: 'assistant', content: 'A' }] },
-      { conversations: [{ from: 'human', value: 'Q' }, { from: 'gpt', value: 'A' }] },
+      {
+        messages: [
+          { role: 'user', content: 'Q' },
+          { role: 'assistant', content: 'A' },
+        ],
+      },
+      {
+        conversations: [
+          { from: 'human', value: 'Q' },
+          { from: 'gpt', value: 'A' },
+        ],
+      },
       { instruction: 'i', output: 'o' },
       42,
     ];
@@ -613,7 +639,12 @@ describe('rowsToExamples — text and unknown', () => {
 describe('rowsToExamples — malformed rows', () => {
   it('skips invalid rows and reports row-numbered errors', () => {
     const rows = [
-      { messages: [{ role: 'user', content: 'ok' }, { role: 'assistant', content: 'fine' }] },
+      {
+        messages: [
+          { role: 'user', content: 'ok' },
+          { role: 'assistant', content: 'fine' },
+        ],
+      },
       { messages: [] },
       { messages: 'not-an-array' },
       42,

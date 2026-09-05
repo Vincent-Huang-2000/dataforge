@@ -67,7 +67,7 @@ function CommandRow({ label, command }: { label: string; command: string }) {
     <div className="flex items-center gap-1.5">
       <span className="tech-label w-18 shrink-0">{label}</span>
       <code
-        className="min-w-0 flex-1 truncate rounded-(--radius-control) border border-hairline bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-ink-dim"
+        className="border-hairline bg-surface-2 text-ink-dim min-w-0 flex-1 truncate rounded-(--radius-control) border px-1.5 py-0.5 font-mono text-xs"
         title={command}
       >
         {command}
@@ -86,20 +86,18 @@ function CommandRow({ label, command }: { label: string; command: string }) {
 
 function OllamaCorsHelp() {
   return (
-    <div className="space-y-2 rounded-(--radius-control) border border-info/30 bg-info/5 p-2.5">
-      <p className="flex items-start gap-1.5 text-[13px] text-ink-dim">
-        <Info className="mt-px size-4 shrink-0 text-info" />
+    <div className="border-info/30 bg-info/5 space-y-2 rounded-(--radius-control) border p-2.5">
+      <p className="text-ink-dim flex items-start gap-1.5 text-[13px]">
+        <Info className="text-info mt-px size-4 shrink-0" />
         <span>
-          To let this deployed app reach a local Ollama, allow browser origins, then
-          restart Ollama:
+          To let this deployed app reach a local Ollama, allow browser origins, then restart Ollama:
         </span>
       </p>
       {OLLAMA_COMMANDS.map((c) => (
         <CommandRow key={c.label} label={c.label} command={c.command} />
       ))}
-      <p className="text-[13px] text-ink-faint">
-        Safari blocks HTTPS→localhost calls; use Chrome, Edge or Firefox for local
-        models.
+      <p className="text-ink-faint text-[13px]">
+        Safari blocks HTTPS→localhost calls; use Chrome, Edge or Firefox for local models.
       </p>
     </div>
   );
@@ -170,7 +168,7 @@ export function ProviderCard({
   return (
     <div className="panel">
       <div className="panel-header">
-        <span className="text-sm font-semibold text-ink">{adapter.label}</span>
+        <span className="text-ink text-sm font-semibold">{adapter.label}</span>
         <Switch
           checked={cfg.enabled}
           onCheckedChange={(enabled) => apply({ enabled }, true)}
@@ -198,7 +196,7 @@ export function ProviderCard({
                   type="button"
                   onClick={() => setShowKey((s) => !s)}
                   aria-label={showKey ? 'Hide API key' : 'Show API key'}
-                  className="absolute inset-y-0 right-0 flex items-center px-2 text-ink-faint transition-colors duration-100 hover:text-ink"
+                  className="text-ink-faint hover:text-ink absolute inset-y-0 right-0 flex items-center px-2 transition-colors duration-100"
                 >
                   {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -225,10 +223,13 @@ export function ProviderCard({
               onClick={() => setAdvancedOpen((o) => !o)}
               aria-expanded={advancedOpen}
               aria-controls={`${adapter.id}-advanced`}
-              className="flex items-center gap-1 text-[13px] text-ink-dim transition-colors duration-100 hover:text-ink"
+              className="text-ink-dim hover:text-ink flex items-center gap-1 text-[13px] transition-colors duration-100"
             >
               <ChevronRight
-                className={cn('size-3.5 transition-transform duration-100', advancedOpen && 'rotate-90')}
+                className={cn(
+                  'size-3.5 transition-transform duration-100',
+                  advancedOpen && 'rotate-90',
+                )}
               />
               Advanced
             </button>
@@ -263,9 +264,7 @@ export function ProviderCard({
               ) : (
                 <Badge tone="danger" className="min-w-0" title={result.message}>
                   <CircleAlert className="size-3 shrink-0" />
-                  <span className="truncate normal-case tracking-normal">
-                    {result.message}
-                  </span>
+                  <span className="truncate tracking-normal normal-case">{result.message}</span>
                 </Badge>
               ))}
           </div>

@@ -211,10 +211,9 @@ export function AnalyticsPage() {
       }
       toast.success(`Tokenized ${fmtNum(targets.length)} examples`, { id: toastId });
     } catch (err) {
-      toast.error(
-        `Token counting failed: ${err instanceof Error ? err.message : String(err)}`,
-        { id: toastId },
-      );
+      toast.error(`Token counting failed: ${err instanceof Error ? err.message : String(err)}`, {
+        id: toastId,
+      });
     } finally {
       setComputing(false);
     }
@@ -256,24 +255,24 @@ export function AnalyticsPage() {
 
   const splitItems: BarListItem[] = SPLITS.map((s) => ({
     key: s,
-    label: <span className="font-mono text-xs uppercase tracking-wide">{s}</span>,
+    label: <span className="font-mono text-xs tracking-wide uppercase">{s}</span>,
     value: stats.bySplit[s],
   }));
 
-  const roleItems: BarListItem[] = ROLE_ORDER.filter(
-    (r) => (stats.roleCounts[r] ?? 0) > 0,
-  ).map((r) => ({
-    key: r,
-    label: <span className="font-mono text-xs">{r}</span>,
-    value: stats.roleCounts[r],
-  }));
+  const roleItems: BarListItem[] = ROLE_ORDER.filter((r) => (stats.roleCounts[r] ?? 0) > 0).map(
+    (r) => ({
+      key: r,
+      label: <span className="font-mono text-xs">{r}</span>,
+      value: stats.roleCounts[r],
+    }),
+  );
 
   const qualityItems: BarListItem[] = QUALITY_BUCKETS.map((b, i) => ({
     key: b.key,
     label: (
       <span className="flex items-baseline gap-1.5">
-        <span className="text-[13px] text-ink-dim">{b.label}</span>
-        <span className="font-mono text-[11px] tabular-nums text-ink-faint">{b.range}</span>
+        <span className="text-ink-dim text-[13px]">{b.label}</span>
+        <span className="text-ink-faint font-mono text-[11px] tabular-nums">{b.range}</span>
       </span>
     ),
     value: stats.qualityBuckets[i],
@@ -282,7 +281,7 @@ export function AnalyticsPage() {
 
   const tagItems: BarListItem[] = stats.topTags.map((t) => ({
     key: t.tag,
-    label: <span className="truncate font-mono text-xs text-ink-dim">{t.tag}</span>,
+    label: <span className="text-ink-dim truncate font-mono text-xs">{t.tag}</span>,
     value: t.count,
   }));
 
@@ -300,7 +299,7 @@ export function AnalyticsPage() {
         <span className="font-mono tabular-nums">{fmtNum(stats.untokenized)} untokenized</span>
         <Button variant="solid" size="xs" onClick={handleComputeTokens} disabled={computing}>
           {computing ? (
-            <Spinner className="size-3.5 border-accent-ink/30 border-t-accent-ink" />
+            <Spinner className="border-accent-ink/30 border-t-accent-ink size-3.5" />
           ) : (
             <Calculator />
           )}
@@ -319,7 +318,7 @@ export function AnalyticsPage() {
       <>
         <span>avg</span>
         <HeatBadge score={stats.avgScore} />
-        <span className="font-mono tabular-nums text-ink-faint">
+        <span className="text-ink-faint font-mono tabular-nums">
           {fmtNum(stats.scored)}/{fmtNum(stats.count)}
         </span>
       </>
@@ -335,13 +334,13 @@ export function AnalyticsPage() {
       <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-6">
         <header className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-lg font-semibold text-ink">Analytics</h1>
-            <p className="mt-0.5 text-[13px] text-ink-dim">
+            <h1 className="text-ink text-lg font-semibold">Analytics</h1>
+            <p className="text-ink-dim mt-0.5 text-[13px]">
               Composition, token telemetry and coverage for this dataset.
             </p>
           </div>
           {data.total > stats.count && (
-            <p className="font-mono text-xs tabular-nums text-ink-faint">
+            <p className="text-ink-faint font-mono text-xs tabular-nums">
               measuring first {fmtNum(stats.count)} of {fmtNum(data.total)}
             </p>
           )}
@@ -414,7 +413,7 @@ export function AnalyticsPage() {
               {roleItems.length > 0 ? (
                 <BarList items={roleItems} />
               ) : (
-                <p className="py-2 text-[13px] text-ink-faint">No messages yet.</p>
+                <p className="text-ink-faint py-2 text-[13px]">No messages yet.</p>
               )}
             </div>
           </section>
@@ -424,7 +423,7 @@ export function AnalyticsPage() {
         <section className="panel animate-rise" style={rise()}>
           <div className="panel-header">
             <h2 className="tech-label">Token distribution</h2>
-            <span className="font-mono text-xs tabular-nums text-ink-faint">
+            <span className="text-ink-faint font-mono text-xs tabular-nums">
               {fmtNum(stats.tokenized)} of {fmtNum(stats.count)} tokenized
             </span>
           </div>
@@ -432,7 +431,7 @@ export function AnalyticsPage() {
             {stats.tokenized > 0 ? (
               <Histogram buckets={stats.histogram} />
             ) : (
-              <p className="py-8 text-center text-[13px] text-ink-faint">
+              <p className="text-ink-faint py-8 text-center text-[13px]">
                 No token counts yet. Run "Compute tokens" above to populate the histogram.
               </p>
             )}
@@ -451,16 +450,16 @@ export function AnalyticsPage() {
             <div className="flex flex-col gap-2.5 p-3">
               {coverage.map(({ icon: Icon, label, count }) => (
                 <div key={label} className="flex items-center gap-3">
-                  <Icon className="size-4 shrink-0 text-ink-faint" aria-hidden />
-                  <span className="w-28 shrink-0 text-[13px] text-ink-dim">{label}</span>
+                  <Icon className="text-ink-faint size-4 shrink-0" aria-hidden />
+                  <span className="text-ink-dim w-28 shrink-0 text-[13px]">{label}</span>
                   <Progress
                     value={stats.count ? count / stats.count : 0}
                     className="min-w-0 flex-1"
                   />
-                  <span className="w-10 shrink-0 text-right font-mono text-[13px] tabular-nums text-ink">
+                  <span className="text-ink w-10 shrink-0 text-right font-mono text-[13px] tabular-nums">
                     {pctLabel(count, stats.count)}
                   </span>
-                  <span className="w-24 shrink-0 text-right font-mono text-xs tabular-nums text-ink-faint">
+                  <span className="text-ink-faint w-24 shrink-0 text-right font-mono text-xs tabular-nums">
                     {fmtNum(count)}/{fmtNum(stats.count)}
                   </span>
                 </div>
@@ -472,7 +471,7 @@ export function AnalyticsPage() {
             <section className="panel animate-rise" style={rise()}>
               <div className="panel-header">
                 <h2 className="tech-label">Quality distribution</h2>
-                <span className="flex items-center gap-1.5 text-xs text-ink-faint">
+                <span className="text-ink-faint flex items-center gap-1.5 text-xs">
                   avg <HeatBadge score={stats.avgScore} />
                 </span>
               </div>
@@ -488,7 +487,7 @@ export function AnalyticsPage() {
           <section className="panel animate-rise" style={rise()}>
             <div className="panel-header">
               <h2 className="tech-label">Top tags</h2>
-              <span className="font-mono text-xs tabular-nums text-ink-faint">
+              <span className="text-ink-faint font-mono text-xs tabular-nums">
                 {fmtNum(stats.uniqueTags)} unique
               </span>
             </div>

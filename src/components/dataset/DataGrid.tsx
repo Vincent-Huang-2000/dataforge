@@ -84,12 +84,12 @@ const Row = memo(function Row({
       }}
       className={cn(
         GRID_TEMPLATE,
-        'absolute left-0 top-0 h-9 w-full cursor-pointer select-none border-b border-l-2 border-b-hairline/60 transition-colors duration-100',
+        'border-b-hairline/60 absolute top-0 left-0 h-9 w-full cursor-pointer border-b border-l-2 transition-colors duration-100 select-none',
         active
           ? 'border-l-accent bg-surface-3'
           : selected
-            ? 'border-l-transparent bg-surface-2 hover:bg-surface-3'
-            : 'border-l-transparent hover:bg-surface-2',
+            ? 'bg-surface-2 hover:bg-surface-3 border-l-transparent'
+            : 'hover:bg-surface-2 border-l-transparent',
       )}
       style={{ transform: `translateY(${start}px)` }}
     >
@@ -107,7 +107,7 @@ const Row = memo(function Row({
       </div>
       <div
         role="gridcell"
-        className="truncate text-right font-mono text-xs tabular-nums text-ink-faint"
+        className="text-ink-faint truncate text-right font-mono text-xs tabular-nums"
       >
         {index + 1}
       </div>
@@ -118,21 +118,16 @@ const Row = memo(function Row({
         {preview.user ? (
           <span className="text-ink">{preview.user}</span>
         ) : (
-          <span className="italic text-ink-faint">(empty)</span>
+          <span className="text-ink-faint italic">(empty)</span>
         )}
-        {preview.assistant && (
-          <span className="text-ink-faint"> · {preview.assistant}</span>
-        )}
+        {preview.assistant && <span className="text-ink-faint"> · {preview.assistant}</span>}
       </div>
-      <div
-        role="gridcell"
-        className="text-right font-mono text-xs tabular-nums text-ink-dim"
-      >
+      <div role="gridcell" className="text-ink-dim text-right font-mono text-xs tabular-nums">
         {e.messages.length}
       </div>
       <div
         role="gridcell"
-        className="truncate text-right font-mono text-xs tabular-nums text-ink-dim"
+        className="text-ink-dim truncate text-right font-mono text-xs tabular-nums"
       >
         {e.tokenCount == null ? <span className="text-ink-faint">·</span> : fmtNum(e.tokenCount)}
       </div>
@@ -151,14 +146,10 @@ const Row = memo(function Row({
         </span>
       </div>
       <div role="gridcell" className="flex items-center justify-center gap-1">
-        {e.flagged && (
-          <Flag role="img" aria-label="Flagged" className="size-3.5 text-danger" />
-        )}
-        {e.reviewed && (
-          <Check role="img" aria-label="Reviewed" className="size-3.5 text-ok" />
-        )}
+        {e.flagged && <Flag role="img" aria-label="Flagged" className="text-danger size-3.5" />}
+        {e.reviewed && <Check role="img" aria-label="Reviewed" className="text-ok size-3.5" />}
       </div>
-      <div role="gridcell" className="truncate font-mono text-[11px] text-ink-faint">
+      <div role="gridcell" className="text-ink-faint truncate font-mono text-[11px]">
         {fmtRelativeTime(e.updatedAt)}
       </div>
     </div>
@@ -278,7 +269,7 @@ export function DataGrid({
           icon={Inbox}
           title="No examples yet"
           description="Import a dataset file or write the first example by hand."
-          className="w-full max-w-lg animate-rise"
+          className="animate-rise w-full max-w-lg"
           action={
             <div className="flex items-center gap-2">
               <Link to="../import" className={buttonVariants({ variant: 'solid', size: 'sm' })}>
@@ -297,7 +288,7 @@ export function DataGrid({
   if (paged.total === 0) {
     return (
       <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-3 p-8">
-        <p className="text-sm text-ink-dim">No matches. Adjust the filters.</p>
+        <p className="text-ink-dim text-sm">No matches. Adjust the filters.</p>
         <Button size="sm" variant="outline" onClick={onClearFilters}>
           Clear filters
         </Button>
@@ -318,7 +309,7 @@ export function DataGrid({
         aria-rowindex={1}
         className={cn(
           GRID_TEMPLATE,
-          'sticky top-0 z-10 h-9 border-b border-l-2 border-hairline border-l-transparent bg-surface',
+          'border-hairline bg-surface sticky top-0 z-10 h-9 border-b border-l-2 border-l-transparent',
         )}
       >
         <div role="columnheader" className="flex justify-center">

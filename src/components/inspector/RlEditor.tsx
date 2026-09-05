@@ -34,7 +34,7 @@ export function RlEditor({ messages, answer, onChange }: RlEditorProps) {
           aria-label="Verifiable answer"
           className="h-8 font-mono text-[13px]"
         />
-        <p className="mt-1.5 text-xs leading-relaxed text-ink-dim">
+        <p className="text-ink-dim mt-1.5 text-xs leading-relaxed">
           Reward functions compare model output against this answer.
         </p>
       </section>

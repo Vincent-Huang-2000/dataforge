@@ -46,9 +46,9 @@ export function ProviderModelPicker({
 
   if (configs && enabled.length === 0) {
     return (
-      <div className="rounded-(--radius-control) border border-dashed border-hairline px-3 py-2.5 text-[13px] text-ink-dim">
+      <div className="border-hairline text-ink-dim rounded-(--radius-control) border border-dashed px-3 py-2.5 text-[13px]">
         No AI provider configured.{' '}
-        <Link to="/settings" className="inline-flex items-center gap-1 text-accent hover:underline">
+        <Link to="/settings" className="text-accent inline-flex items-center gap-1 hover:underline">
           <Settings2 className="size-3.5" /> Add one in Settings
         </Link>
         . Keys stay in your browser.

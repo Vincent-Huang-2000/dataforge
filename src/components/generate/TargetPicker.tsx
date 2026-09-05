@@ -60,138 +60,139 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
-export const TargetPicker = forwardRef<TargetPickerHandle, TargetPickerProps>(
-  function TargetPicker({ projectId, label = 'Run on', typeFilter, disabled = false }, ref) {
-    const groupName = useId();
-    const selection = useUiStore((s) => s.selection);
+export const TargetPicker = forwardRef<TargetPickerHandle, TargetPickerProps>(function TargetPicker(
+  { projectId, label = 'Run on', typeFilter, disabled = false },
+  ref,
+) {
+  const groupName = useId();
+  const selection = useUiStore((s) => s.selection);
 
-    const [mode, setMode] = useState<TargetMode>(() =>
-      useUiStore.getState().selection.size > 0 ? 'selection' : 'all',
-    );
-    const [sampleSize, setSampleSize] = useState(String(DEFAULT_SAMPLE_SIZE));
+  const [mode, setMode] = useState<TargetMode>(() =>
+    useUiStore.getState().selection.size > 0 ? 'selection' : 'all',
+  );
+  const [sampleSize, setSampleSize] = useState(String(DEFAULT_SAMPLE_SIZE));
 
-    const fetchPoolIds = useCallback(async (): Promise<string[]> => {
-      const collection = typeFilter
-        ? db.examples.where('[projectId+type]').equals([projectId, typeFilter])
-        : db.examples.where('projectId').equals(projectId);
-      return (await collection.primaryKeys()) as string[];
-    }, [projectId, typeFilter]);
+  const fetchPoolIds = useCallback(async (): Promise<string[]> => {
+    const collection = typeFilter
+      ? db.examples.where('[projectId+type]').equals([projectId, typeFilter])
+      : db.examples.where('projectId').equals(projectId);
+    return (await collection.primaryKeys()) as string[];
+  }, [projectId, typeFilter]);
 
-    const poolIds = useLiveQuery(() => fetchPoolIds(), [fetchPoolIds]);
+  const poolIds = useLiveQuery(() => fetchPoolIds(), [fetchPoolIds]);
 
-    /** Grid selection narrowed to this project and (optionally) one type. */
-    const selectedCount = useMemo(() => {
-      if (poolIds === undefined) return null;
-      const pool = new Set(poolIds);
-      let n = 0;
-      for (const id of selection) if (pool.has(id)) n += 1;
-      return n;
-    }, [poolIds, selection]);
+  /** Grid selection narrowed to this project and (optionally) one type. */
+  const selectedCount = useMemo(() => {
+    if (poolIds === undefined) return null;
+    const pool = new Set(poolIds);
+    let n = 0;
+    for (const id of selection) if (pool.has(id)) n += 1;
+    return n;
+  }, [poolIds, selection]);
 
-    // If the eligible selection empties while active, fall back to the pool.
-    useEffect(() => {
-      if (mode === 'selection' && selectedCount === 0) setMode('all');
-    }, [mode, selectedCount]);
+  // If the eligible selection empties while active, fall back to the pool.
+  useEffect(() => {
+    if (mode === 'selection' && selectedCount === 0) setMode('all');
+  }, [mode, selectedCount]);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        resolve: async () => {
-          const pool = await fetchPoolIds();
-          if (mode === 'selection') {
-            const chosen = useUiStore.getState().selection;
-            return pool.filter((id) => chosen.has(id));
-          }
-          if (mode === 'sample') {
-            const n = Math.floor(Number(sampleSize));
-            const size = Number.isFinite(n) && n >= 1 ? n : DEFAULT_SAMPLE_SIZE;
-            return shuffle(pool).slice(0, size);
-          }
-          return pool;
-        },
-      }),
-      [fetchPoolIds, mode, sampleSize],
-    );
+  useImperativeHandle(
+    ref,
+    () => ({
+      resolve: async () => {
+        const pool = await fetchPoolIds();
+        if (mode === 'selection') {
+          const chosen = useUiStore.getState().selection;
+          return pool.filter((id) => chosen.has(id));
+        }
+        if (mode === 'sample') {
+          const n = Math.floor(Number(sampleSize));
+          const size = Number.isFinite(n) && n >= 1 ? n : DEFAULT_SAMPLE_SIZE;
+          return shuffle(pool).slice(0, size);
+        }
+        return pool;
+      },
+    }),
+    [fetchPoolIds, mode, sampleSize],
+  );
 
-    const poolCount = poolIds?.length ?? null;
-    const selectionEmpty = selectedCount === null || selectedCount === 0;
+  const poolCount = poolIds?.length ?? null;
+  const selectionEmpty = selectedCount === null || selectedCount === 0;
 
-    return (
-      <fieldset disabled={disabled} className={cn('min-w-0', disabled && 'opacity-45')}>
-        <legend className="mb-1 block text-[13px] font-medium text-ink-dim">{label}</legend>
-        <div className="flex flex-col gap-2 rounded-(--radius-control) border border-hairline bg-surface-2 px-2.5 py-2">
-          <div className="flex items-center gap-2">
-            <label
-              className={cn(
-                'flex items-center gap-2 text-[13px]',
-                selectionEmpty ? 'text-ink-faint' : 'cursor-pointer text-ink',
-              )}
-            >
-              <input
-                type="radio"
-                name={groupName}
-                className="size-3.5 accent-accent"
-                checked={mode === 'selection'}
-                onChange={() => setMode('selection')}
-                disabled={selectionEmpty}
-              />
-              Selected in grid
-            </label>
-            <span className="ml-auto font-mono text-xs tabular-nums text-ink-dim">
-              {selectedCount === null ? '—' : fmtNum(selectedCount)}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-ink">
-              <input
-                type="radio"
-                name={groupName}
-                className="size-3.5 accent-accent"
-                checked={mode === 'all'}
-                onChange={() => setMode('all')}
-              />
-              All examples
-            </label>
-            <span className="ml-auto font-mono text-xs tabular-nums text-ink-dim">
-              {poolCount === null ? '—' : fmtNum(poolCount)}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-ink">
-              <input
-                type="radio"
-                name={groupName}
-                className="size-3.5 accent-accent"
-                checked={mode === 'sample'}
-                onChange={() => setMode('sample')}
-              />
-              Random sample
-            </label>
-            <Input
-              type="number"
-              min={1}
-              inputMode="numeric"
-              value={sampleSize}
-              onChange={(e) => {
-                setSampleSize(e.target.value);
-                setMode('sample');
-              }}
-              className="h-7 w-16 px-1.5 text-center font-mono text-xs tabular-nums"
-              aria-label="Sample size"
+  return (
+    <fieldset disabled={disabled} className={cn('min-w-0', disabled && 'opacity-45')}>
+      <legend className="text-ink-dim mb-1 block text-[13px] font-medium">{label}</legend>
+      <div className="border-hairline bg-surface-2 flex flex-col gap-2 rounded-(--radius-control) border px-2.5 py-2">
+        <div className="flex items-center gap-2">
+          <label
+            className={cn(
+              'flex items-center gap-2 text-[13px]',
+              selectionEmpty ? 'text-ink-faint' : 'text-ink cursor-pointer',
+            )}
+          >
+            <input
+              type="radio"
+              name={groupName}
+              className="accent-accent size-3.5"
+              checked={mode === 'selection'}
+              onChange={() => setMode('selection')}
+              disabled={selectionEmpty}
             />
-            <span className="ml-auto font-mono text-xs tabular-nums text-ink-faint">
-              of {poolCount === null ? '—' : fmtNum(poolCount)}
-            </span>
-          </div>
+            Selected in grid
+          </label>
+          <span className="text-ink-dim ml-auto font-mono text-xs tabular-nums">
+            {selectedCount === null ? '—' : fmtNum(selectedCount)}
+          </span>
         </div>
-        {typeFilter !== undefined && (
-          <p className="mt-1 text-xs text-ink-faint">
-            Only {typeFilter.toUpperCase()} examples are eligible.
-          </p>
-        )}
-      </fieldset>
-    );
-  },
-);
+
+        <div className="flex items-center gap-2">
+          <label className="text-ink flex cursor-pointer items-center gap-2 text-[13px]">
+            <input
+              type="radio"
+              name={groupName}
+              className="accent-accent size-3.5"
+              checked={mode === 'all'}
+              onChange={() => setMode('all')}
+            />
+            All examples
+          </label>
+          <span className="text-ink-dim ml-auto font-mono text-xs tabular-nums">
+            {poolCount === null ? '—' : fmtNum(poolCount)}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-ink flex cursor-pointer items-center gap-2 text-[13px]">
+            <input
+              type="radio"
+              name={groupName}
+              className="accent-accent size-3.5"
+              checked={mode === 'sample'}
+              onChange={() => setMode('sample')}
+            />
+            Random sample
+          </label>
+          <Input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={sampleSize}
+            onChange={(e) => {
+              setSampleSize(e.target.value);
+              setMode('sample');
+            }}
+            className="h-7 w-16 px-1.5 text-center font-mono text-xs tabular-nums"
+            aria-label="Sample size"
+          />
+          <span className="text-ink-faint ml-auto font-mono text-xs tabular-nums">
+            of {poolCount === null ? '—' : fmtNum(poolCount)}
+          </span>
+        </div>
+      </div>
+      {typeFilter !== undefined && (
+        <p className="text-ink-faint mt-1 text-xs">
+          Only {typeFilter.toUpperCase()} examples are eligible.
+        </p>
+      )}
+    </fieldset>
+  );
+});

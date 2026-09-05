@@ -160,46 +160,44 @@ export function FileDrop({
           className={cn('size-6', dragOver ? 'text-accent' : 'text-ink-faint')}
           aria-hidden
         />
-        <p className="text-sm font-medium text-ink">Drop files here or click to browse</p>
-        <p className="text-[13px] text-ink-dim">
+        <p className="text-ink text-sm font-medium">Drop files here or click to browse</p>
+        <p className="text-ink-dim text-[13px]">
           Multiple files allowed. Your data stays in this browser.
         </p>
       </div>
 
-      <p className="font-mono text-[11px] tracking-wide text-ink-faint">
+      <p className="text-ink-faint font-mono text-[11px] tracking-wide">
         {ACCEPT_EXTENSIONS.join('  ')}
       </p>
 
       {entries.map((entry) => (
         <div key={entry.id} className="flex flex-col gap-3">
           <div className="panel flex items-center gap-2.5 px-3 py-2">
-            <FileText className="size-4 shrink-0 text-ink-faint" aria-hidden />
-            <span className="min-w-0 truncate font-mono text-[13px] text-ink">{entry.name}</span>
-            <span className="shrink-0 font-mono text-xs tabular-nums text-ink-faint">
+            <FileText className="text-ink-faint size-4 shrink-0" aria-hidden />
+            <span className="text-ink min-w-0 truncate font-mono text-[13px]">{entry.name}</span>
+            <span className="text-ink-faint shrink-0 font-mono text-xs tabular-nums">
               {fmtBytes(entry.size)}
             </span>
             <span className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5">
-              {entry.status === 'queued' && (
-                <span className="text-xs text-ink-faint">Queued</span>
-              )}
+              {entry.status === 'queued' && <span className="text-ink-faint text-xs">Queued</span>}
               {(entry.status === 'parsing' ||
                 entry.status === 'detecting' ||
                 entry.status === 'converting') && (
                 <>
                   <Spinner className="size-3.5" />
-                  <span className="text-xs text-ink-dim">{PHASE_LABELS[entry.status]}</span>
+                  <span className="text-ink-dim text-xs">{PHASE_LABELS[entry.status]}</span>
                 </>
               )}
               {entry.status === 'done' && (
                 <>
-                  <CheckCircle2 className="size-4 text-ok" aria-hidden />
-                  <span className="text-xs text-ok">Ready</span>
+                  <CheckCircle2 className="text-ok size-4" aria-hidden />
+                  <span className="text-ok text-xs">Ready</span>
                 </>
               )}
               {entry.status === 'failed' && (
                 <>
-                  <CircleAlert className="size-4 shrink-0 text-danger" aria-hidden />
-                  <span className="max-w-72 truncate text-xs text-danger" title={entry.error}>
+                  <CircleAlert className="text-danger size-4 shrink-0" aria-hidden />
+                  <span className="text-danger max-w-72 truncate text-xs" title={entry.error}>
                     {entry.error ?? 'Import failed'}
                   </span>
                 </>

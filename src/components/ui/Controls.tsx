@@ -12,17 +12,17 @@ export function Switch({
   return (
     <SwitchPrimitive.Root
       className={cn(
-        'inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-hairline-strong bg-surface-3 transition-colors',
+        'border-hairline-strong bg-surface-3 inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border transition-colors',
         'data-[state=checked]:border-ember-600 data-[state=checked]:bg-ember-600/40',
-        'focus-visible:outline focus-visible:outline-accent disabled:opacity-45',
+        'focus-visible:outline-accent focus-visible:outline disabled:opacity-45',
         className,
       )}
       {...props}
     >
       <SwitchPrimitive.Thumb
         className={cn(
-          'block size-3.5 translate-x-0.5 rounded-full bg-ink-dim transition-transform',
-          'data-[state=checked]:translate-x-[17px] data-[state=checked]:bg-ember-400',
+          'bg-ink-dim block size-3.5 translate-x-0.5 rounded-full transition-transform',
+          'data-[state=checked]:bg-ember-400 data-[state=checked]:translate-x-[17px]',
         )}
       />
     </SwitchPrimitive.Root>
@@ -38,10 +38,10 @@ export function Checkbox({
     <CheckboxPrimitive.Root
       checked={indeterminate ? 'indeterminate' : props.checked}
       className={cn(
-        'flex size-4 shrink-0 items-center justify-center rounded-[3px] border border-hairline-strong bg-surface-2',
+        'border-hairline-strong bg-surface-2 flex size-4 shrink-0 items-center justify-center rounded-[3px] border',
         'data-[state=checked]:border-ember-600 data-[state=checked]:bg-ember-500 data-[state=checked]:text-accent-ink',
         'data-[state=indeterminate]:border-ember-600 data-[state=indeterminate]:text-ember-400',
-        'focus-visible:outline focus-visible:outline-accent disabled:opacity-45',
+        'focus-visible:outline-accent focus-visible:outline disabled:opacity-45',
         className,
       )}
       {...props}
@@ -67,10 +67,7 @@ export function Progress({
   return (
     <ProgressPrimitive.Root
       value={pct}
-      className={cn(
-        'relative h-1 w-full overflow-hidden rounded-full bg-surface-3',
-        className,
-      )}
+      className={cn('bg-surface-3 relative h-1 w-full overflow-hidden rounded-full', className)}
     >
       <ProgressPrimitive.Indicator
         className={cn(
@@ -89,7 +86,7 @@ export function Spinner({ className }: { className?: string }) {
       role="status"
       aria-label="Loading"
       className={cn(
-        'inline-block size-4 animate-spin rounded-full border-[1.5px] border-hairline-strong border-t-ember-500',
+        'border-hairline-strong border-t-ember-500 inline-block size-4 animate-spin rounded-full border-[1.5px]',
         className,
       )}
     />
@@ -98,7 +95,7 @@ export function Spinner({ className }: { className?: string }) {
 
 export function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded-[3px] border border-hairline bg-surface-3 px-1 py-px font-mono text-[11px] text-ink-dim">
+    <kbd className="border-hairline bg-surface-3 text-ink-dim rounded-[3px] border px-1 py-px font-mono text-[11px]">
       {children}
     </kbd>
   );

@@ -6,12 +6,7 @@
  * probe. Thinking models return `message.thinking`, which maps to
  * {@link ChatResult.reasoning} (with leading `<think>` fallback).
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 import {
   asArray,
@@ -96,11 +91,7 @@ async function listModels(config: ProviderConfig): Promise<ProviderModel[]> {
     const name = rec['name'];
     const modelField = rec['model'];
     const id =
-      typeof name === 'string'
-        ? name
-        : typeof modelField === 'string'
-          ? modelField
-          : undefined;
+      typeof name === 'string' ? name : typeof modelField === 'string' ? modelField : undefined;
     if (id === undefined) continue;
     models.push({ id, name: id });
   }
@@ -114,9 +105,7 @@ function testConnection(config: ProviderConfig): Promise<ConnectionTestResult> {
       headers: apiHeaders(config),
     });
     const version = asRecord(data)?.['version'];
-    return typeof version === 'string'
-      ? `Connected — Ollama ${version}`
-      : 'Connected — Ollama';
+    return typeof version === 'string' ? `Connected — Ollama ${version}` : 'Connected — Ollama';
   });
 }
 

@@ -204,16 +204,12 @@ describe('extractQAPairs', () => {
 
   it('extracts ### Question / ### Answer sections with body lines', () => {
     const md = ['### Question', 'What is two plus two?', '### Answer', 'Four.'].join('\n');
-    expect(extractQAPairs(md)).toEqual([
-      { instruction: 'What is two plus two?', output: 'Four.' },
-    ]);
+    expect(extractQAPairs(md)).toEqual([{ instruction: 'What is two plus two?', output: 'Four.' }]);
   });
 
   it('extracts **Q:** / **A:** pairs', () => {
     const md = ['**Q:** How fast is it?', '**A:** Very fast.'].join('\n');
-    expect(extractQAPairs(md)).toEqual([
-      { instruction: 'How fast is it?', output: 'Very fast.' },
-    ]);
+    expect(extractQAPairs(md)).toEqual([{ instruction: 'How fast is it?', output: 'Very fast.' }]);
   });
 
   it('extracts bare Q:/A: pairs', () => {
@@ -459,7 +455,12 @@ function buildMinimalParquet(values: string[]): ArrayBuffer {
   const pageData: number[] = [];
   for (const value of values) {
     const b = encoder.encode(value);
-    pageData.push(b.length & 0xff, (b.length >> 8) & 0xff, (b.length >> 16) & 0xff, (b.length >> 24) & 0xff);
+    pageData.push(
+      b.length & 0xff,
+      (b.length >> 8) & 0xff,
+      (b.length >> 16) & 0xff,
+      (b.length >> 24) & 0xff,
+    );
     pageData.push(...b);
   }
 
@@ -683,7 +684,10 @@ describe('parseFile router', () => {
   });
 
   it('routes .pdf to a document', async () => {
-    const file = await parseFile({ name: 'report.pdf', data: buildMinimalPdf('Quarterly numbers') });
+    const file = await parseFile({
+      name: 'report.pdf',
+      data: buildMinimalPdf('Quarterly numbers'),
+    });
     const doc = expectDocument(file);
     expect(doc.title).toBe('report');
     expect(doc.text).toContain('Quarterly numbers');

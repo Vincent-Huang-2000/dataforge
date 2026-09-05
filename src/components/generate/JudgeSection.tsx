@@ -77,10 +77,10 @@ export function JudgeSection({
     <section className="panel">
       <div className="panel-header">
         <h2 className="tech-label">LLM judge</h2>
-        <span className="text-[11px] text-ink-faint">Helpfulness, correctness, clarity.</span>
+        <span className="text-ink-faint text-[11px]">Helpfulness, correctness, clarity.</span>
       </div>
       <div className="flex flex-col gap-3 p-3">
-        <p className="text-xs leading-relaxed text-ink-dim">
+        <p className="text-ink-dim text-xs leading-relaxed">
           Scores examples 0 to 100 with an LLM rubric. Writes the score onto each example.
         </p>
 
@@ -93,7 +93,7 @@ export function JudgeSection({
 
         <div className="flex items-center gap-3">
           {!ready && (
-            <p className="text-[11px] text-ink-faint">
+            <p className="text-ink-faint text-[11px]">
               Pick a provider and model above to run this.
             </p>
           )}
@@ -104,7 +104,11 @@ export function JudgeSection({
             disabled={locked}
             onClick={() => void handleRun()}
           >
-            {busy ? <Spinner className="size-3 border-accent-ink/30 border-t-accent-ink" /> : <Scale />}
+            {busy ? (
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3" />
+            ) : (
+              <Scale />
+            )}
             Judge
           </Button>
         </div>

@@ -145,28 +145,29 @@
 @layer components {
   /* Panel: the basic Forge surface — flat, hairline-bordered */
   .panel {
-    @apply bg-surface border border-hairline rounded-(--radius-panel);
+    @apply bg-surface border-hairline rounded-(--radius-panel) border;
   }
 
   .panel-header {
-    @apply flex items-center justify-between gap-2 border-b border-hairline px-3 py-2;
+    @apply border-hairline flex items-center justify-between gap-2 border-b px-3 py-2;
   }
 
   /* Technical label — uppercase micro-type used across the workbench */
   .tech-label {
-    @apply font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint;
+    @apply text-ink-faint font-mono text-[11px] font-medium tracking-[0.12em] uppercase;
   }
 
   /* Heat chip — quality score rendered as forge heat */
   .heat-chip {
-    @apply font-mono text-xs tabular-nums rounded-(--radius-control) border px-1.5 py-px;
+    @apply rounded-(--radius-control) border px-1.5 py-px font-mono text-xs tabular-nums;
   }
 }
 
 @layer utilities {
   /* Brushed-metal texture for hero/empty states only — never on data surfaces */
   .texture-brushed {
-    background-image: repeating-linear-gradient(
+    background-image:
+      repeating-linear-gradient(
         0deg,
         transparent 0px,
         transparent 2px,

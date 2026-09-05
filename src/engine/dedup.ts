@@ -184,7 +184,10 @@ function normalizeText(text: string): string {
 
 /** Lowercased words with all punctuation stripped (Unicode-aware). */
 function normalizeWords(text: string): string[] {
-  return text.toLowerCase().split(NON_WORD).filter((word) => word.length > 0);
+  return text
+    .toLowerCase()
+    .split(NON_WORD)
+    .filter((word) => word.length > 0);
 }
 
 // ---------------------------------------------------------------------------

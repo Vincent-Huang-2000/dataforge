@@ -25,12 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select';
-import {
-  JobProgress,
-  jobCreatedIds,
-  undoCreatedAction,
-  type ActiveJobHandle,
-} from './JobProgress';
+import { JobProgress, jobCreatedIds, undoCreatedAction, type ActiveJobHandle } from './JobProgress';
 import { TargetPicker, type TargetPickerHandle } from './TargetPicker';
 
 export function PreferenceSection({
@@ -59,10 +54,7 @@ export function PreferenceSection({
       toast.success(
         <span>
           {fmtNum(created.length)} pairs created.{' '}
-          <Link
-            to={`/p/${projectId}/data?type=preference`}
-            className="text-accent hover:underline"
-          >
+          <Link to={`/p/${projectId}/data?type=preference`} className="text-accent hover:underline">
             Open pairs
           </Link>
         </span>,
@@ -119,10 +111,10 @@ export function PreferenceSection({
     <section className="panel">
       <div className="panel-header">
         <h2 className="tech-label">Preference pairs</h2>
-        <span className="text-[11px] text-ink-faint">New DPO examples from SFT sources.</span>
+        <span className="text-ink-faint text-[11px]">New DPO examples from SFT sources.</span>
       </div>
       <div className="flex flex-col gap-3 p-3">
-        <p className="text-[13px] leading-relaxed text-ink-dim">
+        <p className="text-ink-dim text-[13px] leading-relaxed">
           Builds DPO pairs. Samples {candidates} answers from your model, judges them, keeps best
           and worst.
         </p>
@@ -151,7 +143,7 @@ export function PreferenceSection({
 
         <div className="flex items-center gap-3">
           {!ready && (
-            <p className="text-[11px] text-ink-faint">
+            <p className="text-ink-faint text-[11px]">
               Pick a provider and model above to run this.
             </p>
           )}
@@ -163,7 +155,7 @@ export function PreferenceSection({
             onClick={() => void handleRun()}
           >
             {busy ? (
-              <Spinner className="size-3 border-accent-ink/30 border-t-accent-ink" />
+              <Spinner className="border-accent-ink/30 border-t-accent-ink size-3" />
             ) : (
               <GitCompare />
             )}

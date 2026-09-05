@@ -12,12 +12,7 @@
  * participates in a runtime import cycle (its own imports from this file are
  * acyclic, and adapters only `import type` from index.ts).
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 
 // ---------------------------------------------------------------------------
@@ -61,9 +56,7 @@ function extractErrorDetail(body: string): string {
   } catch {
     // Body is not JSON — keep the raw text.
   }
-  return detail.length > ERROR_DETAIL_LIMIT
-    ? `${detail.slice(0, ERROR_DETAIL_LIMIT)}…`
-    : detail;
+  return detail.length > ERROR_DETAIL_LIMIT ? `${detail.slice(0, ERROR_DETAIL_LIMIT)}…` : detail;
 }
 
 /**
@@ -285,8 +278,7 @@ const OPENAI_BASE = 'https://api.openai.com';
 /** Chat-capable id prefixes: gpt-* and o-series reasoning models (o1, o3, …). */
 const CHAT_MODEL_ID = /^(gpt-|o\d)/;
 /** Modality-specific ids that share the gpt-/o prefixes but cannot chat. */
-const NON_CHAT_MODEL =
-  /embedding|audio|dall-e|whisper|tts|realtime|image|transcribe|moderation/;
+const NON_CHAT_MODEL = /embedding|audio|dall-e|whisper|tts|realtime|image|transcribe|moderation/;
 
 function authHeaders(config: ProviderConfig): Record<string, string> {
   return { Authorization: `Bearer ${config.apiKey}` };
@@ -294,12 +286,7 @@ function authHeaders(config: ProviderConfig): Record<string, string> {
 
 async function chat(config: ProviderConfig, req: ChatRequest): Promise<ChatResult> {
   const base = resolveBaseUrl(config, OPENAI_BASE);
-  return chatCompletions(
-    'OpenAI',
-    `${base}/v1/chat/completions`,
-    authHeaders(config),
-    req,
-  );
+  return chatCompletions('OpenAI', `${base}/v1/chat/completions`, authHeaders(config), req);
 }
 
 async function listModels(config: ProviderConfig): Promise<ProviderModel[]> {

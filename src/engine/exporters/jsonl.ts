@@ -48,8 +48,7 @@ export type SplitFileMap = Partial<Record<SplitName, string>>;
 
 /** How reasoning traces are rendered for a target. */
 export type ReasoningStyle =
-  | { kind: 'thinking-field' }
-  | { kind: 'inline'; open: string; close: string };
+  { kind: 'thinking-field' } | { kind: 'inline'; open: string; close: string };
 
 /** OpenAI wrapped tool-call shape used in canonical message JSON. */
 export interface CanonicalToolCall {
@@ -228,7 +227,8 @@ export function flattenMessagesText(
   const style = opts?.style ?? inlineReasoningStyle(ctx.model);
   const open = style.kind === 'inline' ? style : { open: '<think>', close: '</think>' };
   const modelToolStyle = ctx.model?.toolCallStyle;
-  const toolStyle = modelToolStyle === undefined || modelToolStyle === 'none' ? 'hermes' : modelToolStyle;
+  const toolStyle =
+    modelToolStyle === undefined || modelToolStyle === 'none' ? 'hermes' : modelToolStyle;
   return prepareMessages(messages, ctx, opts)
     .map((m) => {
       let body =

@@ -6,12 +6,7 @@
  * shared parser maps to {@link ChatResult.reasoning} (with leading `<think>`
  * fallback for models that inline traces).
  */
-import type {
-  ChatRequest,
-  ChatResult,
-  ProviderConfig,
-  ProviderModel,
-} from '@/engine/types';
+import type { ChatRequest, ChatResult, ProviderConfig, ProviderModel } from '@/engine/types';
 import type { ConnectionTestResult, ProviderAdapter } from './index';
 import {
   asArray,
@@ -37,12 +32,7 @@ function apiHeaders(config: ProviderConfig): Record<string, string> {
 
 async function chat(config: ProviderConfig, req: ChatRequest): Promise<ChatResult> {
   const base = resolveBaseUrl(config, OPENROUTER_BASE);
-  return chatCompletions(
-    'OpenRouter',
-    `${base}/chat/completions`,
-    apiHeaders(config),
-    req,
-  );
+  return chatCompletions('OpenRouter', `${base}/chat/completions`, apiHeaders(config), req);
 }
 
 async function listModels(config: ProviderConfig): Promise<ProviderModel[]> {
