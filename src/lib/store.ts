@@ -24,7 +24,9 @@ interface UiState {
   setInspectorDirty: (dirty: boolean) => void;
   /** Remembered desktop width of the docked example inspector, in pixels. */
   inspectorDockWidth: number;
-  setInspectorDockWidth: (width: number) => void;
+  /** Whether the workbench navigation shows labels or stays icon-only. */
+  navRailCollapsed: boolean;
+  toggleNavRail: () => void;
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
 }
@@ -42,13 +44,19 @@ export const useUiStore = create<UiState>()(
       inspectorDirty: false,
       setInspectorDirty: (inspectorDirty) => set({ inspectorDirty }),
       inspectorDockWidth: DEFAULT_INSPECTOR_DOCK_WIDTH,
-      setInspectorDockWidth: (inspectorDockWidth) => set({ inspectorDockWidth }),
+      setInspectorDockWidth: (inspectorDockWidth: number) => set({ inspectorDockWidth }),
+      navRailCollapsed: false,
+      toggleNavRail: () => set((state) => ({ navRailCollapsed: !state.navRailCollapsed })),
       commandPaletteOpen: false,
       setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
     }),
     {
       name: 'dataforge-ui',
-      partialize: (s) => ({ theme: s.theme, inspectorDockWidth: s.inspectorDockWidth }),
+      partialize: (s) => ({
+        theme: s.theme,
+        inspectorDockWidth: s.inspectorDockWidth,
+        navRailCollapsed: s.navRailCollapsed,
+      }),
     },
   ),
 );
