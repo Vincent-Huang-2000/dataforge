@@ -24,6 +24,7 @@ interface UiState {
   setInspectorDirty: (dirty: boolean) => void;
   /** Remembered desktop width of the docked example inspector, in pixels. */
   inspectorDockWidth: number;
+  setInspectorDockWidth: (width: number) => void;
   /** Whether the workbench navigation shows labels or stays icon-only. */
   navRailCollapsed: boolean;
   toggleNavRail: () => void;
