@@ -3,6 +3,7 @@
  * parent project so "last updated" ordering stays correct everywhere.
  */
 import { db } from '@/lib/db';
+import { createExample } from '@/engine/types';
 import type {
   DatasetType,
   Example,
@@ -104,6 +105,41 @@ export async function duplicateExample(id: string): Promise<string | null> {
   await db.examples.add(copy);
   await touchProject(ex.projectId);
   return copy.id;
+}
+
+/** Type-specific blank starting point for a hand-written example. */
+function blankContent(type: DatasetType): Partial<Example> & Pick<Example, 'messages'> {
+  const messages: Message[] = [{ role: 'user', content: '' }];
+  switch (type) {
+    case 'preference':
+      return {
+        messages,
+        chosen: [{ role: 'assistant', content: '' }],
+        rejected: [{ role: 'assistant', content: '' }],
+      };
+    case 'kto':
+      return {
+        messages,
+        completion: [{ role: 'assistant', content: '' }],
+        label: true,
+      };
+    case 'rl':
+      return { messages, answer: '' };
+    case 'sft':
+      return { messages };
+  }
+}
+
+/**
+ * Create a blank example for manual authoring. The type locks to the
+ * project's dataset type so the matching editor mounts; the caller opens
+ * the inspector on the returned id (undo removes the new example again).
+ */
+export async function addExample(projectId: string, type: DatasetType): Promise<string> {
+  const example = createExample({ projectId, type, ...blankContent(type) });
+  await db.examples.add(example);
+  await touchProject(projectId);
+  return example.id;
 }
 
 /**
