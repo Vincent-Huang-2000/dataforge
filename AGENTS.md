@@ -39,7 +39,7 @@ main.tsx (Provider + HashRouter 装配)
 | 状态 | 工具 | 管什么 |
 |---|---|---|
 | 持久数据 | Dexie + `useLiveQuery`（`lib/hooks.ts`） | projects/examples/jobs/providers/settings/cache 全部数据 |
-| 纯 UI 瞬态 | zustand（`lib/store.ts`、`lib/undo.ts`） | theme/selection/inspectorId/inspectorDirty/命令面板/undo 栈 |
+| 纯 UI 瞬态 | zustand（`lib/store.ts`、`lib/undo.ts`） | theme/selection/inspectorId/inspectorDirty/inspectorDockWidth/navRailCollapsed/命令面板/undo 栈 |
 | 网络读 | TanStack Query（仅 2 处） | HF 数据集搜索、provider 模型列表 |
 
 ## Key Directories
@@ -122,6 +122,8 @@ node scripts/check-registry.mjs   # 模型注册表 freshness 报告（无需 AP
 | `src/lib/mutations.ts` | 全部写操作（统一 touchProject 刷 updatedAt） |
 | `src/lib/hooks.ts` | `useLiveQuery` 数据 hooks |
 | `src/lib/ai/runner.ts` | 批作业运行器 + 响应缓存 + `ChatFn`/`MinimalDb` seam |
+| `src/components/layout/NavRail.tsx` | 工作台可折叠导航轨；展开时显示标题与页面标签，折叠时保留图标与提示 |
+| `src/lib/store.ts` | zustand UI 状态；持久化主题、检查器宽度和导航轨展开状态 |
 | `src/App.tsx` | 路由表（见下） |
 | `vite.config.ts` | 构建 + 测试配置 + `@` alias + 双入口 |
 | `scripts/check-registry.mjs` | 注册表 freshness 检查（`SHIPPED` 映射须与 `exporters/readme.ts` 同步） |
