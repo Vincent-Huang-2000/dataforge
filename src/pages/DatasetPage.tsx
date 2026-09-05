@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useFilteredDataset, useProject, type ExampleFilters } from '@/lib/hooks';
 import { addExample } from '@/lib/mutations';
 import { useUiStore } from '@/lib/store';
@@ -151,10 +152,15 @@ export function DatasetPage() {
     // the inspector's prev/next chain), so start from a clean view.
     clearFilters();
     let newId: string | null = null;
-    await withUndo('New example', [], async () => {
-      newId = await addExample(projectId, project.datasetType);
-      return [newId];
-    });
+    try {
+      await withUndo('New example', [], async () => {
+        newId = await addExample(projectId, project.datasetType);
+        return [newId];
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create example');
+      return;
+    }
     if (newId) openExample(newId);
   }, [projectId, project, clearFilters, openExample]);
 
