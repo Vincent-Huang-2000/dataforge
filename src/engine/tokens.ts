@@ -13,6 +13,7 @@
 
 import { encode } from 'gpt-tokenizer/encoding/o200k_base';
 import type { Example, Message } from '@/engine/types';
+import { pretrainText } from '@/engine/types';
 
 /**
  * Fixed per-message overhead added by {@link countExample} for every message
@@ -81,11 +82,14 @@ function countMessages(messages: readonly Message[] | undefined): number {
  *  - Tool-call function names/ids, think-block delimiters, tool schema
  *    definitions (`Example.tools`) and the RL `answer` field are NOT counted —
  *    they are template/metadata concerns rendered (or omitted) at export time.
+ *  - Pretrain examples are raw text with no chat framing: only the text is
+ *    counted, without the per-message overhead.
  *
  * @param example - The example to measure.
  * @returns The approximate total token count.
  */
 export function countExample(example: Example): number {
+  if (example.type === 'pretrain') return countText(pretrainText(example));
   return (
     countMessages(example.messages) +
     countMessages(example.chosen) +

@@ -37,6 +37,13 @@ export const TOO_SHORT_CHARS = 10;
 /** Messages longer than this many characters are flagged `too_long`. */
 export const TOO_LONG_CHARS = 32_000;
 
+/**
+ * Pretrain texts shorter than this many characters are flagged `too_short`.
+ * Pretrain has no `too_long` cap: long documents are normal and packing
+ * splits them across sequences.
+ */
+export const PRETRAIN_TOO_SHORT_CHARS = 50;
+
 /** Canonical V2 roles accepted without an `invalid_role` issue. */
 const VALID_ROLES: ReadonlySet<string> = new Set([
   'system',
@@ -282,6 +289,7 @@ function checkMessage(
   knownCallIds: ReadonlySet<string>,
   specialTokens: readonly string[],
   tokenSeverity: 'high' | 'medium',
+  pretrain: boolean,
   issues: QualityIssue[],
 ): void {
   const role = rawRole(message);
@@ -324,7 +332,18 @@ function checkMessage(
   }
 
   // Length -------------------------------------------------------------------
-  if (role === 'user' || role === 'assistant') {
+  if (pretrain) {
+    if (content.length < PRETRAIN_TOO_SHORT_CHARS) {
+      issues.push({
+        type: 'too_short',
+        severity: 'medium',
+        message: `Pretrain text is very short (${content.length} chars)`,
+        messageIndex: index,
+        field,
+        autoFixable: false,
+      });
+    }
+  } else if (role === 'user' || role === 'assistant') {
     if (content.length < TOO_SHORT_CHARS && !hasToolCalls) {
       issues.push({
         type: 'too_short',
@@ -348,8 +367,8 @@ function checkMessage(
   }
 
   // Refusals (assistant turns; never in `rejected` — refusals there are
-  // legitimate DPO negative signal) -----------------------------------------
-  if (role === 'assistant' && field !== 'rejected') {
+  // legitimate DPO negative signal, nor in pretrain corpus text) -------------
+  if (role === 'assistant' && field !== 'rejected' && !pretrain) {
     if (REFUSAL_DETECTORS.some((re) => re.test(content))) {
       issues.push({
         type: 'refusal_pattern',
@@ -449,6 +468,7 @@ function collectIssues(example: Example, targetModel?: ModelInfo): QualityIssue[
   const specialTokens =
     targetModel !== undefined ? SPECIAL_TOKENS[targetModel.templateFamily] : ALL_SPECIAL_TOKENS;
   const tokenSeverity: 'high' | 'medium' = targetModel !== undefined ? 'high' : 'medium';
+  const pretrain = example.type === 'pretrain';
 
   // Presence of a prompt --------------------------------------------------------
   if (example.messages.length === 0) {
@@ -467,13 +487,48 @@ function collectIssues(example: Example, targetModel?: ModelInfo): QualityIssue[
   for (const { field, messages } of messageLists(example)) {
     const knownCallIds = field === 'messages' ? promptCallIds : new Set(promptCallIds);
     messages.forEach((message, index) => {
-      checkMessage(message, index, field, knownCallIds, specialTokens, tokenSeverity, issues);
+      checkMessage(
+        message,
+        index,
+        field,
+        knownCallIds,
+        specialTokens,
+        tokenSeverity,
+        pretrain,
+        issues,
+      );
       if (rawRole(message) === 'assistant' && message.toolCalls !== undefined) {
         for (const call of message.toolCalls) knownCallIds.add(call.id);
       }
     });
   }
 
+  if (pretrain) checkPretrainShape(example, issues);
+  else checkConversation(example, issues);
+
+  // Context overflow against the fine-tune target. Pretrain text is split across
+  // sequences when packing, so an over-long document is only worth a note. -----
+  if (targetModel !== undefined) {
+    const tokens = safeCountExample(example);
+    if (tokens > targetModel.recommendedSeqLen) {
+      issues.push({
+        type: 'context_overflow',
+        severity: pretrain ? 'low' : 'critical',
+        message: pretrain
+          ? `Text is ~${tokens} tokens, longer than ${targetModel.name}'s ` +
+            `${targetModel.recommendedSeqLen}-token sequence — it will span several sequences`
+          : `Example is ~${tokens} tokens but ${targetModel.name} trains at ` +
+            `${targetModel.recommendedSeqLen} tokens — it will be truncated`,
+        autoFixable: false,
+      });
+    }
+  }
+
+  return issues;
+}
+
+/** Conversation checks: turn order, required roles, length balance, per-type fields. */
+function checkConversation(example: Example, issues: QualityIssue[]): void {
   // Turn order (prompt conversation only) ---------------------------------------
   const roles = example.messages.map(rawRole);
   const firstUser = roles.indexOf('user');
@@ -602,23 +657,30 @@ function collectIssues(example: Example, targetModel?: ModelInfo): QualityIssue[
       });
     }
   }
+}
 
-  // Context overflow against the fine-tune target -------------------------------------
-  if (targetModel !== undefined) {
-    const tokens = safeCountExample(example);
-    if (tokens > targetModel.recommendedSeqLen) {
-      issues.push({
-        type: 'context_overflow',
-        severity: 'critical',
-        message:
-          `Example is ~${tokens} tokens but ${targetModel.name} trains at ` +
-          `${targetModel.recommendedSeqLen} tokens — it will be truncated`,
-        autoFixable: false,
-      });
-    }
+/**
+ * Pretrain shape: exactly one plain assistant message holding the raw text
+ * (no reasoning, tool calls or loss weight). Conversation checks — turn order,
+ * required roles, length balance — do not apply.
+ */
+function checkPretrainShape(example: Example, issues: QualityIssue[]): void {
+  const [only] = example.messages;
+  const valid =
+    example.messages.length === 1 &&
+    rawRole(only) === 'assistant' &&
+    only.reasoning === undefined &&
+    (only.toolCalls === undefined || only.toolCalls.length === 0) &&
+    only.weight === undefined;
+  if (example.messages.length > 0 && !valid) {
+    issues.push({
+      type: 'incoherent_turn_order',
+      severity: 'high',
+      message: 'Pretrain example must be a single plain assistant message holding the raw text',
+      field: 'messages',
+      autoFixable: false,
+    });
   }
-
-  return issues;
 }
 
 // ---------------------------------------------------------------------------
@@ -647,6 +709,8 @@ function completenessScore(example: Example): number {
   const roles = example.messages.map(rawRole);
   const user = roles.includes('user') ? 0.5 : 0;
   switch (example.type) {
+    case 'pretrain':
+      return hasContent(example.messages) ? 1 : 0;
     case 'preference':
       return (
         user + (hasContent(example.chosen) ? 0.25 : 0) + (hasContent(example.rejected) ? 0.25 : 0)
@@ -666,6 +730,14 @@ function completenessScore(example: Example): number {
 
 function lengthBalanceScore(example: Example): number {
   const { userLen, assistantLen } = contentLengths(example);
+
+  // pretrain is raw text: judge its substance alone.
+  if (example.type === 'pretrain') {
+    if (assistantLen === 0) return 0;
+    if (assistantLen < PRETRAIN_TOO_SHORT_CHARS) return 0.5;
+    if (assistantLen < 200) return 0.8;
+    return 1;
+  }
 
   // rl is prompt-only by design: judge the prompt substance alone.
   if (example.type === 'rl') {
@@ -895,7 +967,8 @@ function cloneMessage(message: Message): Message {
  *     latin-1 and cp1252 flavors) and drop U+FFFD replacement characters.
  *  3. `removeRefusals` — remove refusal-pattern openers (plus the rest of
  *     the sentence) from assistant turns. Skipped inside `rejected`, where
- *     refusals are legitimate negative DPO signal, and in reasoning traces.
+ *     refusals are legitimate negative DPO signal, in reasoning traces, and
+ *     in pretrain examples (corpus text, not a chat reply).
  *  4. `maskPii` — mask with `[EMAIL]`/`[SSN]`/`[CARD]`/`[IP]`/`[PHONE]`.
  *  5. `removeSpecialTokens` — strip every known template control token.
  *  6. `normalizeWhitespace` — collapse 3+ newlines, drop trailing spaces,
@@ -999,7 +1072,8 @@ export function cleanExample(
 
   const cleaned: Example = {
     ...example,
-    messages: cleanList(example.messages, true) ?? [],
+    // Refusal stripping targets chat replies, never pretrain corpus text.
+    messages: cleanList(example.messages, example.type !== 'pretrain') ?? [],
     tags: [...example.tags],
     qualityIssues: example.qualityIssues.map((issue) => ({ ...issue })),
     meta: { ...example.meta },

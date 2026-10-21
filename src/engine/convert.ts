@@ -2,7 +2,7 @@
  * DataForge V2 — conversion between raw source rows and canonical Examples.
  *
  * {@link rowsToExamples} turns detected source rows (OpenAI messages,
- * ShareGPT, Alpaca, DPO pairs, KTO, raw text) into canonical `Example`
+ * ShareGPT, Alpaca, DPO pairs, KTO, raw text → pretrain) into canonical `Example`
  * records: roles are normalized, `<think>` traces are extracted into the
  * structural `reasoning` field, tool calls are passed through with generated
  * ids when missing, and invalid rows are skipped with error strings.
@@ -23,13 +23,14 @@ import type {
   ToolCall,
   ToolDefinition,
 } from '@/engine/types';
-import { createExample } from '@/engine/types';
+import { createExample, pretrainText } from '@/engine/types';
 import {
   ALPACA_ALIASES,
   DPO_PROMPT_FIELDS,
   classifyRow,
   isRecord,
   resolveAlpacaField,
+  resolveTextField,
 } from '@/engine/detection';
 
 // ---------------------------------------------------------------------------
@@ -324,6 +325,22 @@ function convertOpenAiRow(row: unknown, projectId: string): Example {
       meta: { sourceFormat: 'openai-messages' },
     });
   }
+  // A lone plain assistant message is MS-SWIFT's pretraining shape.
+  const [only] = messages;
+  if (
+    messages.length === 1 &&
+    only.role === 'assistant' &&
+    only.reasoning === undefined &&
+    only.toolCalls === undefined &&
+    tools === undefined
+  ) {
+    return createExample({
+      projectId,
+      type: 'pretrain',
+      messages: [{ role: 'assistant', content: only.content }],
+      meta: { sourceFormat: 'openai-messages' },
+    });
+  }
   return createExample({
     projectId,
     messages,
@@ -422,6 +439,7 @@ function convertKtoRow(row: unknown, projectId: string): Example {
   });
 }
 
+/** Raw-text row → pretrain example (the text becomes one assistant message). */
 function convertTextRow(row: unknown, schema: DetectedSchema, projectId: string): Example {
   let content: string | undefined;
   if (typeof row === 'string') {
@@ -435,20 +453,17 @@ function convertTextRow(row: unknown, schema: DetectedSchema, projectId: string)
       }
     }
     if (content === undefined) {
-      const keys = Object.keys(row);
-      if (keys.length === 1) {
-        const only = row[keys[0]];
-        if (typeof only === 'string') content = only;
-      }
+      const source = resolveTextField(row);
+      if (source !== undefined) content = row[source] as string;
     }
-    if (content === undefined && typeof row['text'] === 'string') content = row['text'];
   }
   if (content === undefined || content.trim().length === 0) {
     throw new Error('row has no usable text content');
   }
   return createExample({
     projectId,
-    messages: [{ role: 'user', content }],
+    type: 'pretrain',
+    messages: [{ role: 'assistant', content }],
     meta: { sourceFormat: 'text' },
   });
 }
@@ -544,6 +559,7 @@ function messageToOpenAi(message: Message): Record<string, unknown> {
 }
 
 function exampleToOpenAiRow(example: Example): object {
+  if (example.type === 'pretrain') return { text: pretrainText(example) };
   const row: Record<string, unknown> = { messages: example.messages.map(messageToOpenAi) };
   if (example.chosen !== undefined && example.chosen.length > 0) {
     row['chosen'] = example.chosen.map(messageToOpenAi);
