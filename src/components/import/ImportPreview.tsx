@@ -10,7 +10,7 @@ import { ChevronDown, ChevronRight, Plus, TriangleAlert } from 'lucide-react';
 import type { Example, ImportResult } from '@/engine/types';
 import { bulkAddExamples } from '@/lib/db';
 import { withUndo } from '@/lib/undo';
-import { cn, fmtNum } from '@/lib/utils';
+import { cn, fmtNum, isQuotaError } from '@/lib/utils';
 import { Badge, TypeBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Controls';
@@ -20,10 +20,6 @@ const ERROR_COUNT = 5;
 const PREVIEW_LEN = 110;
 /** Above this, undo snapshots would double the import's memory — skip them. */
 const UNDO_LIMIT = 20_000;
-
-function isQuotaError(err: unknown, message: string): boolean {
-  return (err instanceof Error && err.name === 'QuotaExceededError') || /quota/i.test(message);
-}
 
 function clip(text: string): string {
   const oneLine = text.replace(/\s+/g, ' ').trim();
@@ -70,7 +66,7 @@ export function ImportPreview({
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       toast.error(
-        isQuotaError(err, message)
+        isQuotaError(err)
           ? 'Not enough browser storage. Free space in Settings, then retry.'
           : `Import failed: ${message}`,
       );

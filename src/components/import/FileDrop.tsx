@@ -13,28 +13,8 @@ import { importFileToProject, type ImportPhase } from '@/lib/workerClient';
 import { cn, fmtBytes } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Controls';
+import { ACCEPT_EXTENSIONS, PHASE_LABELS } from './fileTypes';
 import { ImportPreview } from './ImportPreview';
-
-const ACCEPT_EXTENSIONS = [
-  '.jsonl',
-  '.ndjson',
-  '.json',
-  '.csv',
-  '.tsv',
-  '.parquet',
-  '.xlsx',
-  '.xls',
-  '.pdf',
-  '.docx',
-  '.md',
-  '.txt',
-] as const;
-
-const PHASE_LABELS: Record<ImportPhase, string> = {
-  parsing: 'Parsing',
-  detecting: 'Detecting format',
-  converting: 'Converting',
-};
 
 interface FileEntry {
   id: string;

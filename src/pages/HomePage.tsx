@@ -1,19 +1,22 @@
 /**
  * Home — the project launcher. Hero wordmark, storage-persistence banner,
- * project grid, and entry points for new/demo projects.
+ * project grid, and entry points for new/opened/demo projects. A dataset file
+ * dropped anywhere on the page goes through the same Open file dialog.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Anvil, FlaskConical, Plus } from 'lucide-react';
+import { Anvil, FlaskConical, FolderOpen, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { DEFAULT_MODEL_ID } from '@/engine/registry';
 import { bulkAddExamples } from '@/lib/db';
 import { buildDemoExamples } from '@/lib/demoData';
 import { useProjectCounts, useProjects } from '@/lib/hooks';
 import { createProject } from '@/lib/mutations';
-import { fmtNum } from '@/lib/utils';
+import { cn, fmtNum } from '@/lib/utils';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { ACCEPT_EXTENSIONS } from '@/components/import/fileTypes';
 import { NewProjectDialog } from '@/components/home/NewProjectDialog';
+import { OpenFileDialog } from '@/components/home/OpenFileDialog';
 import { ProjectCard } from '@/components/home/ProjectCard';
 import { StorageBanner } from '@/components/home/StorageBanner';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +30,10 @@ export function HomePage() {
   const counts = useProjectCounts();
   const [newOpen, setNewOpen] = useState(false);
   const [creatingDemo, setCreatingDemo] = useState(false);
+  const [openFile, setOpenFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
+  const [dragOver, setDragOver] = useState(false);
 
   // Deep link: /#/?new=1 opens the create dialog (used by the shell + docs).
   useEffect(() => {
@@ -60,10 +67,29 @@ export function HomePage() {
     }
   };
 
+  // Drops are ignored (but still swallowed, so the browser never navigates to
+  // the file) while another dialog or the demo build is in flight.
+  const dropEnabled = !newOpen && openFile === null && !creatingDemo;
+  const isFileDrag = (e: DragEvent) => e.dataTransfer.types.includes('Files');
+
+  const openFiles = (list: FileList | null) => {
+    const files = Array.from(list ?? []);
+    if (files.length === 0) return;
+    if (files.length > 1) toast.info(`One file at a time. Opening "${files[0].name}".`);
+    setOpenFile(files[0]);
+  };
+
   const actionButtons = (
     <>
       <Button variant="solid" onClick={() => setNewOpen(true)} disabled={creatingDemo}>
         <Plus /> New project
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={creatingDemo}
+      >
+        <FolderOpen /> Open file
       </Button>
       <Button variant="outline" onClick={loadDemo} disabled={creatingDemo}>
         {creatingDemo ? <Spinner /> : <FlaskConical />} Load demo project
@@ -72,7 +98,31 @@ export function HomePage() {
   );
 
   return (
-    <div className="min-h-screen">
+    <div
+      className="min-h-screen"
+      onDragEnter={(e) => {
+        if (!dropEnabled || !isFileDrag(e)) return;
+        dragDepth.current += 1;
+        setDragOver(true);
+      }}
+      onDragLeave={() => {
+        if (dragDepth.current === 0) return;
+        dragDepth.current -= 1;
+        if (dragDepth.current === 0) setDragOver(false);
+      }}
+      onDragOver={(e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = dropEnabled ? 'copy' : 'none';
+      }}
+      onDrop={(e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        dragDepth.current = 0;
+        setDragOver(false);
+        if (dropEnabled) openFiles(e.dataTransfer.files);
+      }}
+    >
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-5xl space-y-5 px-4 pt-5 pb-16">
@@ -103,7 +153,7 @@ export function HomePage() {
           <EmptyState
             icon={Anvil}
             title="Forge your first dataset"
-            description="Create a project or load the demo to start building instruction, preference and RL training data, entirely in your browser."
+            description="Create a project, open a dataset file or load the demo to start building instruction, preference and RL training data, entirely in your browser."
             className="animate-rise"
             action={
               <div className="flex flex-wrap items-center justify-center gap-2">
@@ -132,7 +182,33 @@ export function HomePage() {
         ) : null}
       </main>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPT_EXTENSIONS.join(',')}
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Dataset file to open"
+        onChange={(e) => {
+          openFiles(e.target.files);
+          e.target.value = ''; // allow picking the same file again
+        }}
+      />
+
+      <div
+        aria-hidden="true"
+        className={cn(
+          'border-accent bg-ember-500/5 pointer-events-none fixed inset-3 z-40 flex items-center justify-center rounded-(--radius-panel) border-2 border-dashed transition-opacity duration-100',
+          dragOver && dropEnabled ? 'opacity-100' : 'opacity-0',
+        )}
+      >
+        <p className="bg-surface text-ink border-hairline rounded-(--radius-control) border px-4 py-2 text-sm font-medium shadow-lg">
+          Drop to open as a new project
+        </p>
+      </div>
+
       <NewProjectDialog open={newOpen} onOpenChange={setNewOpen} />
+      <OpenFileDialog file={openFile} onClose={() => setOpenFile(null)} />
     </div>
   );
 }

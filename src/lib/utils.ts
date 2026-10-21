@@ -43,6 +43,12 @@ export function fmtRelativeTime(ts: number): string {
   return new Date(ts).toLocaleDateString();
 }
 
+/** True when an IndexedDB write failed because browser storage is full. */
+export function isQuotaError(err: unknown): boolean {
+  if (err instanceof Error && err.name === 'QuotaExceededError') return true;
+  return /quota/i.test(err instanceof Error ? err.message : String(err));
+}
+
 /** Quality score (0–100) → forge heat color classes. Cold steel = poor, molten = excellent. */
 export function heatClasses(score: number | null | undefined): string {
   if (score == null) return 'text-ink-faint border-hairline';
