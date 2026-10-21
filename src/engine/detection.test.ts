@@ -100,6 +100,53 @@ describe('classifyRow', () => {
     expect(classifyRow(ktoRow('maybe'))).toBe('alpaca');
   });
 
+  it('recognizes the preference / KTO / RL shapes other frameworks export', () => {
+    const user = [{ role: 'user', content: 'Q' }];
+    const reply = [{ role: 'assistant', content: 'A' }];
+    // OpenAI fine-tuning DPO.
+    expect(
+      classifyRow({
+        input: { messages: user },
+        preferred_output: reply,
+        non_preferred_output: reply,
+      }),
+    ).toBe('dpo-pairs');
+    // MS-SWIFT DPO: the chosen reply is the tail of `messages`.
+    expect(classifyRow({ messages: [...user, ...reply], rejected_response: 'B' })).toBe(
+      'dpo-pairs',
+    );
+    // TRL KTO with a message-array prompt; MS-SWIFT / LLaMA-Factory KTO.
+    expect(classifyRow({ prompt: user, completion: reply, label: true })).toBe('kto-unpaired');
+    expect(classifyRow({ messages: [...user, ...reply], label: false })).toBe('kto-unpaired');
+    // TRL / Unsloth GRPO (message-array prompt), and the unambiguous `solution`.
+    expect(classifyRow({ prompt: user, answer: '4' })).toBe('prompt-answer');
+    expect(classifyRow({ prompt: user, solution: '4' })).toBe('prompt-answer');
+    expect(classifyRow({ prompt: 'Q', solution: '4' })).toBe('prompt-answer');
+  });
+
+  it('reads text prompt + answer as alpaca unless the source declares rl', () => {
+    expect(classifyRow({ prompt: 'Q', answer: '4' })).toBe('alpaca');
+    expect(classifyRow({ prompt: 'Q', answer: '4' }, 'sft')).toBe('alpaca');
+    // A DataForge export's metadata settles Axolotl's {prompt, answer} RL rows.
+    expect(classifyRow({ prompt: 'Q', answer: '4' }, 'rl')).toBe('prompt-answer');
+    const schema = detectFormat(
+      repeat(() => ({ prompt: 'Q', answer: '4' }), 4),
+      'rl',
+    );
+    expect(schema.format).toBe('prompt-answer');
+    expect(schema.fieldMapping).toEqual({ prompt: 'messages', answer: 'answer' });
+  });
+
+  it('keeps question/answer and explicit-output rows as alpaca', () => {
+    expect(classifyRow({ question: 'Q', answer: 'A' })).toBe('alpaca');
+    expect(classifyRow({ question: 'Q', answer: 'A' }, 'rl')).toBe('alpaca');
+    expect(classifyRow({ prompt: 'Q', answer: 'A', output: 'A' }, 'rl')).toBe('alpaca');
+    // A labelled conversation that does not end in a reply is not KTO.
+    expect(classifyRow({ messages: [{ role: 'user', content: 'Q' }], label: true })).toBe(
+      'openai-messages',
+    );
+  });
+
   it('returns null for unrecognizable rows', () => {
     expect(classifyRow(null)).toBeNull();
     expect(classifyRow(42)).toBeNull();

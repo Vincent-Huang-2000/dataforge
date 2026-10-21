@@ -3,43 +3,16 @@
  * model (vendor-grouped, filterable). Creating navigates to the project's
  * Import surface so empty projects land where data comes in.
  */
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { DatasetType, ModelInfo } from '@/engine/types';
-import { getModel, modelsByVendor, searchModels } from '@/engine/registry';
+import type { DatasetType } from '@/engine/types';
 import { createProject } from '@/lib/mutations';
-import { fmtCtx } from '@/lib/utils';
-import { Badge, type BadgeProps } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Controls';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/Dialog';
 import { Input, Label, Textarea } from '@/components/ui/Input';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-} from '@/components/ui/Select';
-
-const TYPE_OPTIONS: { value: DatasetType; label: string; hint: string }[] = [
-  { value: 'sft', label: 'SFT', hint: 'instruction/chat tuning' },
-  { value: 'preference', label: 'DPO', hint: 'preference pairs' },
-  { value: 'kto', label: 'KTO', hint: 'thumbs up/down feedback' },
-  { value: 'rl', label: 'RL', hint: 'verifiable answers for GRPO' },
-  { value: 'pretrain', label: 'PT', hint: 'raw text for continued pretraining' },
-];
-
-const SIZE_TONES: Record<ModelInfo['sizeClass'], BadgeProps['tone']> = {
-  small: 'ok',
-  medium: 'info',
-  large: 'warn',
-};
-
-/** Sentinel for "no target model" — Radix Select forbids empty item values. */
-const NONE = 'none';
+import { DatasetTypeField, NO_TARGET_MODEL, TargetModelField } from './ProjectFields';
 
 export function NewProjectDialog({
   open,
@@ -52,8 +25,7 @@ export function NewProjectDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [datasetType, setDatasetType] = useState<DatasetType>('sft');
-  const [targetModelId, setTargetModelId] = useState(NONE);
-  const [modelQuery, setModelQuery] = useState('');
+  const [targetModelId, setTargetModelId] = useState(NO_TARGET_MODEL);
   const [creating, setCreating] = useState(false);
 
   // Fresh form every time the dialog opens.
@@ -62,25 +34,10 @@ export function NewProjectDialog({
       setName('');
       setDescription('');
       setDatasetType('sft');
-      setTargetModelId(NONE);
-      setModelQuery('');
+      setTargetModelId(NO_TARGET_MODEL);
       setCreating(false);
     }
   }, [open]);
-
-  const modelGroups = useMemo(() => {
-    const matched = new Set(searchModels(modelQuery).map((m) => m.id));
-    return Object.entries(modelsByVendor())
-      .map(([vendor, models]) => ({
-        vendor,
-        models: models.filter((m) => matched.has(m.id)),
-      }))
-      .filter((g) => g.models.length > 0)
-      .sort((a, b) => a.vendor.localeCompare(b.vendor));
-  }, [modelQuery]);
-
-  const selectedModel = targetModelId === NONE ? undefined : getModel(targetModelId);
-  const selectedType = TYPE_OPTIONS.find((t) => t.value === datasetType) ?? TYPE_OPTIONS[0];
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -92,7 +49,7 @@ export function NewProjectDialog({
         name: trimmed,
         description,
         datasetType,
-        targetModelId: targetModelId === NONE ? null : targetModelId,
+        targetModelId: targetModelId === NO_TARGET_MODEL ? null : targetModelId,
       });
       toast.success(`Project "${project.name}" created`);
       onOpenChange(false);
@@ -133,81 +90,8 @@ export function NewProjectDialog({
             />
           </div>
 
-          <div>
-            <Label id="np-type-label">Dataset type</Label>
-            <Select value={datasetType} onValueChange={(v) => setDatasetType(v as DatasetType)}>
-              <SelectTrigger aria-labelledby="np-type-label">
-                <span>
-                  <span className="font-medium">{selectedType.label}</span>
-                  <span className="text-ink-dim"> · {selectedType.hint}</span>
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {TYPE_OPTIONS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    <span className="font-medium">{t.label}</span>
-                    <span className="text-ink-faint"> · {t.hint}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label id="np-model-label">
-              Target model <span className="text-ink-faint font-normal">(optional)</span>
-            </Label>
-            <Select
-              value={targetModelId}
-              onValueChange={setTargetModelId}
-              onOpenChange={(o) => !o && setModelQuery('')}
-            >
-              <SelectTrigger aria-labelledby="np-model-label">
-                <span className={selectedModel ? undefined : 'text-ink-faint'}>
-                  {selectedModel ? selectedModel.name : 'No target model'}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <div className="border-hairline bg-surface-2 sticky top-0 z-10 -mt-1 border-b p-1.5">
-                  <Input
-                    value={modelQuery}
-                    onChange={(e) => setModelQuery(e.target.value)}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    placeholder="Filter models…"
-                    className="h-8 text-[13px]"
-                    aria-label="Filter models"
-                  />
-                </div>
-                <SelectItem value={NONE}>
-                  <span className="text-ink-dim">No target model</span>
-                </SelectItem>
-                {modelGroups.map((g) => (
-                  <SelectGroup key={g.vendor}>
-                    <SelectLabel>{g.vendor}</SelectLabel>
-                    {g.models.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        <span className="inline-flex items-center gap-2">
-                          <span>{m.name}</span>
-                          <span className="text-ink-faint font-mono text-[11px] tabular-nums">
-                            {fmtCtx(m.nativeCtx)}
-                          </span>
-                          <Badge tone={SIZE_TONES[m.sizeClass]}>{m.sizeClass}</Badge>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-                {modelGroups.length === 0 && (
-                  <p className="text-ink-faint px-3 py-2 text-[13px]">
-                    No models match &ldquo;{modelQuery}&rdquo;
-                  </p>
-                )}
-              </SelectContent>
-            </Select>
-            <p className="text-ink-faint mt-1 text-xs">
-              Drives chat-template rendering, token counts and context-limit checks.
-            </p>
-          </div>
+          <DatasetTypeField idPrefix="np" value={datasetType} onChange={setDatasetType} />
+          <TargetModelField idPrefix="np" value={targetModelId} onChange={setTargetModelId} />
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={creating}>

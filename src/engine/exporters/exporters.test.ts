@@ -9,11 +9,14 @@ import {
   type ExportBundle,
   type ExportOptions,
   type FrameworkId,
+  type ImportResult,
+  type Message,
   type ModelInfo,
 } from '@/engine/types';
 import { getModel } from '@/engine/registry';
 import { detectFormat } from '@/engine/detection';
 import { rowsToExamples } from '@/engine/convert';
+import { parseFile } from '@/engine/importers';
 import {
   buildExportBundle,
   bundleToZip,
@@ -942,6 +945,148 @@ describe('bundleToZip', () => {
     for (const file of bundle.files) {
       expect(strFromU8(unzipped[file.path]!)).toBe(file.content as string);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Export → import round trip (the pipeline Home's Open file runs)
+// ---------------------------------------------------------------------------
+
+const SEED_OSS = mustModel('seed-oss-36b'); // <seed:think>…</seed:think>
+
+/** One model per reasoning style the exporters can write. */
+const ROUND_TRIP_MODELS: [string, ModelInfo | undefined][] = [
+  ['no model', undefined],
+  ['qwen', QWEN],
+  ['gpt-oss', GPT_OSS],
+  ['magistral', MAGISTRAL],
+  ['seed-oss', SEED_OSS],
+];
+
+/** Re-import an export bundle as its zip, exactly like a file opened from Home. */
+async function reimport(bundle: ExportBundle): Promise<ImportResult> {
+  const zip = bundleToZip(bundle);
+  const data = zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) as ArrayBuffer;
+  const parsed = await parseFile({ name: 'export.zip', data });
+  if (parsed.kind !== 'rows') throw new Error('expected the archive to parse as rows');
+  const schema = detectFormat(parsed.rows, parsed.datasetType);
+  return rowsToExamples(parsed.rows, schema, PROJECT, parsed.splits);
+}
+
+/** What must survive a round trip (ids, loss weights and message names aside). */
+function roundTripSignature(ex: Example): unknown {
+  const messages = (list: Message[] | undefined) =>
+    list?.map((m) => ({
+      role: m.role,
+      content: m.content,
+      reasoning: m.reasoning,
+      toolCalls: m.toolCalls?.map((c) => ({ name: c.name, arguments: c.arguments })),
+    }));
+  return {
+    type: ex.type,
+    split: ex.split,
+    messages: messages(ex.messages),
+    chosen: messages(ex.chosen),
+    rejected: messages(ex.rejected),
+    completion: messages(ex.completion),
+    label: ex.label,
+    answer: ex.answer,
+    tools: ex.tools?.map((t) => t.name),
+  };
+}
+
+/** The originals with each format's documented, by-design losses applied. */
+function expectedAfterRoundTrip(
+  framework: FrameworkId,
+  type: DatasetType,
+  examples: Example[],
+): Example[] {
+  const hasToolCalls = (ex: Example) => ex.messages.some((m) => m.toolCalls !== undefined);
+  // Axolotl flattens preference / KTO / RL prompts into one text turn.
+  if (framework === 'axolotl' && type !== 'sft' && type !== 'pretrain') {
+    return examples.map((ex) => ({
+      ...ex,
+      messages: [{ role: 'user', content: ex.messages.map((m) => m.content).join('\n\n') }],
+    }));
+  }
+  // Alpaca holds one exchange: tool conversations are dropped, preference
+  // keeps only the chosen reply (as SFT).
+  if (framework === 'alpaca' && type === 'sft') return examples.filter((ex) => !hasToolCalls(ex));
+  if (framework === 'alpaca' && type === 'preference') {
+    return examples.map((ex) => ({
+      ...ex,
+      type: 'sft',
+      messages: [...ex.messages, ...(ex.chosen ?? [])],
+      chosen: undefined,
+      rejected: undefined,
+    }));
+  }
+  // ShareGPT carries no tool calls or tool schemas.
+  if (framework === 'sharegpt') {
+    return examples.map((ex) => ({
+      ...ex,
+      messages: ex.messages.map(({ toolCalls: _toolCalls, ...m }) => m),
+      tools: undefined,
+    }));
+  }
+  return examples;
+}
+
+describe('export → import round trip', () => {
+  for (const [framework, types] of SUPPORTED) {
+    for (const type of types) {
+      it(`${framework} × ${type}: re-imports the exported examples`, async () => {
+        for (const [label, model] of ROUND_TRIP_MODELS) {
+          const examples = examplesFor(type);
+          const bundle = buildExportBundle(
+            examples,
+            makeOptions({ framework, datasetType: type }),
+            model,
+          );
+          const { examples: imported } = await reimport(bundle);
+          const expected = expectedAfterRoundTrip(framework, type, examples);
+          expect(imported.map(roundTripSignature), `${framework} × ${type} (${label})`).toEqual(
+            expected.map(roundTripSignature),
+          );
+        }
+      });
+    }
+  }
+
+  it('restores each example split from the per-split files of the archive', async () => {
+    const [first, second] = sftExamples();
+    const examples = [first, { ...second, split: 'validation' as const }];
+    const bundle = buildExportBundle(
+      examples,
+      makeOptions({ framework: 'trl', splitFiles: true }),
+      QWEN,
+    );
+    const { examples: imported } = await reimport(bundle);
+    expect(imported.map((ex) => ex.split)).toEqual(['train', 'validation']);
+  });
+
+  it('reads a bare Axolotl RL data file as SFT without the archive metadata', () => {
+    // {prompt, answer} text rows are ambiguous; only the export's metadata.json
+    // (present in the zip, gone once train.jsonl is extracted) marks them RL.
+    const data = rows(
+      buildExportBundle(rlExamples(), makeOptions({ framework: 'axolotl', datasetType: 'rl' })),
+    );
+    const { examples } = rowsToExamples(data, detectFormat(data), PROJECT);
+    expect(examples.map((ex) => ex.type)).toEqual(['sft']);
+    expect(examples[0].messages.at(-1)).toEqual({ role: 'assistant', content: '4' });
+  });
+
+  it('links re-created LLaMA-Factory tool calls to their tool results', async () => {
+    const bundle = buildExportBundle(
+      sftExamples(),
+      makeOptions({ framework: 'llama-factory' }),
+      QWEN,
+    );
+    const { examples: imported } = await reimport(bundle);
+    const [, call, result] = imported[1].messages;
+    expect(call.toolCalls?.[0].id).toMatch(/^call_/);
+    expect(result.toolCallId).toBe(call.toolCalls?.[0].id);
+    expect(imported[1].tools?.[0].parameters).toEqual(sftExamples()[1].tools?.[0].parameters);
   });
 });
 

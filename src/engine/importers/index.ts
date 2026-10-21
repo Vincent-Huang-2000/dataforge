@@ -1,6 +1,8 @@
 /**
  * File-import router: maps an uploaded file (name + bytes) to either tabular
- * rows or a plain-text document, dispatching to the per-format parsers.
+ * rows or a plain-text document, dispatching to the per-format parsers. ZIP
+ * archives (e.g. DataForge export bundles) are unpacked and every dataset
+ * file inside is parsed into one row set, with splits taken from file names.
  *
  * Runtime-environment agnostic: safe in Web Workers and Node. The worker
  * wrapper that marshals files across the postMessage boundary lives in a
@@ -14,6 +16,8 @@ import { parseXlsx } from './xlsx';
 import { parsePdf } from './pdf';
 import { parseDocx } from './docx';
 import { parseTextDocument } from './textdoc';
+import { readArchive, splitFromFileName } from './zip';
+import type { DatasetType, SplitName } from '@/engine/types';
 
 // Re-export the individual parsers so consumers (worker wrapper, import
 // pipeline) have a single entry point.
@@ -34,6 +38,8 @@ export {
   DEFAULT_CHUNK_OVERLAP,
 } from './textdoc';
 export type { ChunkTextOptions } from './textdoc';
+export { readArchive, splitFromFileName } from './zip';
+export type { ArchiveContents, ArchiveEntry } from './zip';
 
 /** Input accepted by {@link parseFile}. */
 export interface ParseFileInput {
@@ -45,18 +51,28 @@ export interface ParseFileInput {
 
 /**
  * Result of parsing a file:
- *  - `rows`     — tabular data (JSONL/JSON/CSV/Parquet/XLSX); schema detection
- *                 happens downstream. `errors` carries non-fatal per-row
- *                 diagnostics when present.
+ *  - `rows`     — tabular data (JSONL/JSON/CSV/Parquet/XLSX, or every such
+ *                 file inside a ZIP); schema detection happens downstream.
+ *                 `errors` carries non-fatal per-row diagnostics when present;
+ *                 `splits` (archives only) is index-aligned with `rows`;
+ *                 `datasetType` (archives only) is the type a DataForge
+ *                 export declares in its metadata, a hint for detection.
  *  - `document` — unstructured text (PDF/DOCX/MD/TXT) plus a title derived
  *                 from the file name.
  */
 export type ParsedFile =
-  | { kind: 'rows'; rows: unknown[]; errors?: string[] }
+  | {
+      kind: 'rows';
+      rows: unknown[];
+      errors?: string[];
+      splits?: SplitName[];
+      datasetType?: DatasetType;
+    }
   | { kind: 'document'; text: string; title: string };
 
 /** Internal format token produced by {@link detectFormat}. */
-export type ImportFormat = 'jsonl' | 'json' | 'csv' | 'parquet' | 'xlsx' | 'pdf' | 'docx' | 'text';
+export type ImportFormat =
+  'jsonl' | 'json' | 'csv' | 'parquet' | 'xlsx' | 'pdf' | 'docx' | 'text' | 'zip';
 
 const EXTENSION_FORMATS: Record<string, ImportFormat> = {
   jsonl: 'jsonl',
@@ -73,7 +89,17 @@ const EXTENSION_FORMATS: Record<string, ImportFormat> = {
   md: 'text',
   markdown: 'text',
   txt: 'text',
+  zip: 'zip',
 };
+
+/** Row formats parsed from inside a ZIP archive (documents are ignored). */
+const ARCHIVE_ROW_FORMATS: ReadonlySet<ImportFormat> = new Set([
+  'jsonl',
+  'json',
+  'csv',
+  'parquet',
+  'xlsx',
+]);
 
 /** Returns the lower-cased extension of a file name, without the dot. */
 function extensionOf(name: string): string {
@@ -134,6 +160,7 @@ export function detectFormat(name: string, data: ArrayBuffer): ImportFormat {
     const window = latin1Window(data, 0, 4096) + latin1Window(data, data.byteLength - 4096, 4096);
     if (window.includes('word/')) return 'docx';
     if (window.includes('xl/')) return 'xlsx';
+    return 'zip';
   }
 
   const text = decodeText(data).trim();
@@ -162,11 +189,14 @@ export function detectFormat(name: string, data: ArrayBuffer): ImportFormat {
  *  - `.pdf`                      → extracted text document
  *  - `.docx`                     → extracted text document
  *  - `.md` / `.markdown` / `.txt` → normalized text document
+ *  - `.zip`                      → rows of every dataset file inside, with
+ *                                  splits from file names (`validation.jsonl`)
  *
  * @param input - File name plus raw bytes.
  * @returns The parsed rows or document.
  * @throws When the bytes are not a valid instance of the routed format
- *         (e.g. corrupt parquet/xlsx, JSON with a scalar root).
+ *         (e.g. corrupt parquet/xlsx, JSON with a scalar root, an archive
+ *         without dataset files).
  */
 export async function parseFile(input: ParseFileInput): Promise<ParsedFile> {
   const { name, data } = input;
@@ -196,5 +226,42 @@ export async function parseFile(input: ParseFileInput): Promise<ParsedFile> {
         text: parseTextDocument(decodeText(data)),
         title: titleFromName(name),
       };
+    case 'zip':
+      return parseArchive(data);
   }
+}
+
+/**
+ * Parses every dataset file inside a ZIP archive into one row set. Each row's
+ * split comes from its file name; parse diagnostics are prefixed with the
+ * file they came from; a DataForge export's declared dataset type rides along
+ * as a detection hint.
+ */
+async function parseArchive(data: ArrayBuffer): Promise<ParsedFile> {
+  const { entries, datasetType } = readArchive(data, (path) => {
+    const format = EXTENSION_FORMATS[extensionOf(path)];
+    return format !== undefined && ARCHIVE_ROW_FORMATS.has(format);
+  });
+  if (entries.length === 0) {
+    throw new Error(
+      'No dataset files found in the archive (expected JSONL, JSON, CSV, Parquet or Excel files)',
+    );
+  }
+  const rows: unknown[] = [];
+  const splits: SplitName[] = [];
+  const errors: string[] = [];
+  for (const entry of entries) {
+    const parsed = await parseFile(entry);
+    if (parsed.kind !== 'rows') continue;
+    const split = splitFromFileName(entry.name);
+    for (const row of parsed.rows) {
+      rows.push(row);
+      splits.push(split);
+    }
+    for (const error of parsed.errors ?? []) errors.push(`${entry.name}: ${error}`);
+  }
+  const parsed: ParsedFile = { kind: 'rows', rows, splits };
+  if (errors.length > 0) parsed.errors = errors;
+  if (datasetType !== undefined) parsed.datasetType = datasetType;
+  return parsed;
 }

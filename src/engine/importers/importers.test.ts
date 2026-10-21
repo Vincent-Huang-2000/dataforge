@@ -16,6 +16,7 @@ import {
   extractQAPairs,
   chunkText,
   MAX_LINE_ERRORS,
+  splitFromFileName,
   type ParsedFile,
 } from './index';
 
@@ -33,7 +34,7 @@ function enc(text: string): ArrayBuffer {
   return bufOf(new TextEncoder().encode(text));
 }
 
-function expectRows(file: ParsedFile): { rows: unknown[]; errors?: string[] } {
+function expectRows(file: ParsedFile): Extract<ParsedFile, { kind: 'rows' }> {
   if (file.kind !== 'rows') throw new Error(`expected rows, got ${file.kind}`);
   return file;
 }
@@ -726,5 +727,70 @@ describe('detectFormat', () => {
     expect(detectFormat('blob', buildMinimalParquet(['x']))).toBe('parquet');
     expect(detectFormat('blob', buildMinimalDocx(['x']))).toBe('docx');
     expect(detectFormat('blob', buildXlsx([{ a: 1 }]))).toBe('xlsx');
+    expect(detectFormat('blob', bufOf(zipSync({ 'a.jsonl': strToU8('{}') })))).toBe('zip');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ZIP archives
+// ---------------------------------------------------------------------------
+
+describe('parseFile — zip archives', () => {
+  it('parses every dataset file inside, with splits from the file names', async () => {
+    const zip = zipSync({
+      'data/train.jsonl': strToU8('{"a":1}\n{"a":2}\n'),
+      'data/validation.jsonl': strToU8('{"a":3}\n'),
+      'metadata.json': strToU8('{"generator":"DataForge Studio v2"}'),
+      'dataset_info.json': strToU8('{}'),
+      'README.md': strToU8('# Export'),
+      '__MACOSX/data/._train.jsonl': strToU8('junk'),
+    });
+    const file = expectRows(await parseFile({ name: 'export.zip', data: bufOf(zip) }));
+    expect(file.rows).toEqual([{ a: 1 }, { a: 2 }, { a: 3 }]);
+    expect(file.splits).toEqual(['train', 'train', 'validation']);
+    expect(file.errors).toBeUndefined();
+    // Metadata without a DataForge generator declares nothing.
+    expect(file.datasetType).toBeUndefined();
+  });
+
+  it('carries the dataset type a DataForge export declares in metadata.json', async () => {
+    const metadata = { generator: 'DataForge Studio v2', options: { datasetType: 'rl' } };
+    const zip = zipSync({
+      'data/train.jsonl': strToU8('{"prompt":"Q","answer":"4"}\n'),
+      'metadata.json': strToU8(JSON.stringify(metadata)),
+    });
+    const file = expectRows(await parseFile({ name: 'export.zip', data: bufOf(zip) }));
+    expect(file.datasetType).toBe('rl');
+
+    const bogus = zipSync({
+      'data/train.jsonl': strToU8('{"a":1}\n'),
+      'metadata.json': strToU8('{"generator":"DataForge Studio v2","options":{"datasetType":"x"}}'),
+    });
+    expect(expectRows(await parseFile({ name: 'b.zip', data: bufOf(bogus) })).datasetType).toBe(
+      undefined,
+    );
+  });
+
+  it('prefixes parse diagnostics with the file they came from', async () => {
+    const zip = zipSync({ 'data/test.jsonl': strToU8('{"a":1}\nnot json\n') });
+    const file = expectRows(await parseFile({ name: 'export.zip', data: bufOf(zip) }));
+    expect(file.splits).toEqual(['test']);
+    expect(file.errors?.[0]).toMatch(/^data\/test\.jsonl: /);
+  });
+
+  it('throws when the archive holds no dataset files', async () => {
+    const zip = zipSync({ 'README.md': strToU8('# Export'), 'metadata.json': strToU8('{}') });
+    await expect(parseFile({ name: 'export.zip', data: bufOf(zip) })).rejects.toThrow(
+      /No dataset files/,
+    );
+  });
+
+  it('maps file names to splits', () => {
+    expect(splitFromFileName('data/validation.jsonl')).toBe('validation');
+    expect(splitFromFileName('val.csv')).toBe('validation');
+    expect(splitFromFileName('dev.parquet')).toBe('validation');
+    expect(splitFromFileName('TEST.json')).toBe('test');
+    expect(splitFromFileName('data/train.jsonl')).toBe('train');
+    expect(splitFromFileName('support_v2.jsonl')).toBe('train');
   });
 });

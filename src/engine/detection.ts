@@ -10,7 +10,7 @@
  * No DOM, no React — safe to run in Web Workers and Node (vitest).
  */
 
-import type { DetectedSchema, SourceFormat } from '@/engine/types';
+import type { DatasetType, DetectedSchema, SourceFormat } from '@/engine/types';
 
 // ---------------------------------------------------------------------------
 // Constants (exported for reuse by convert.ts and the import UI)
@@ -41,6 +41,9 @@ export const ALPACA_CANONICAL_FIELDS = ['instruction', 'output', 'input', 'syste
 /** Accepted prompt-carrying fields for DPO / KTO rows, in priority order. */
 export const DPO_PROMPT_FIELDS: readonly string[] = ['prompt', 'question', 'messages', 'input'];
 
+/** Fields carrying an RL row's verifiable answer, in priority order. */
+export const RL_ANSWER_FIELDS: readonly string[] = ['answer', 'solution'];
+
 /**
  * Fields that carry the body of a raw-text (pretrain) row, in priority order.
  * Pretraining corpora usually ship extra columns (`id`, `url`, `meta`, …)
@@ -60,6 +63,7 @@ export type DetectableFormat = Exclude<SourceFormat, 'unknown'>;
 export const FORMAT_SPECIFICITY: Readonly<Record<DetectableFormat, number>> = {
   'dpo-pairs': 0.98,
   'kto-unpaired': 0.97,
+  'prompt-answer': 0.9,
   'openai-messages': 0.95,
   sharegpt: 0.95,
   alpaca: 0.9,
@@ -73,6 +77,7 @@ const ALPACA_ALIASED_SPECIFICITY = 0.8;
 const CLASSIFY_ORDER: readonly DetectableFormat[] = [
   'dpo-pairs',
   'kto-unpaired',
+  'prompt-answer',
   'openai-messages',
   'sharegpt',
   'alpaca',
@@ -120,12 +125,54 @@ export function isKtoLabel(value: unknown): boolean {
   );
 }
 
-/** True when the row carries a usable DPO/KTO prompt field. */
+/**
+ * True when the row carries a usable DPO/KTO prompt field: a string, a
+ * message array, or (OpenAI fine-tuning DPO) an `{ messages }` object.
+ */
 function hasPromptField(row: Record<string, unknown>): boolean {
   return DPO_PROMPT_FIELDS.some((field) => {
     const value = row[field];
-    return typeof value === 'string' || Array.isArray(value);
+    return (
+      typeof value === 'string' ||
+      Array.isArray(value) ||
+      (isRecord(value) && isMessagesArray(value['messages']))
+    );
   });
+}
+
+/** True when the last message of a message array is an assistant turn. */
+function endsWithAssistant(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  const last: unknown = value[value.length - 1];
+  return isRecord(last) && last['role'] === 'assistant';
+}
+
+/**
+ * The RL answer field of a prompt-answer row, or undefined when the row is
+ * not one. Only unambiguous shapes count: a message-array `prompt` with an
+ * `answer`/`solution` (TRL / Unsloth GRPO), or a text `prompt` with a
+ * `solution`. A text `prompt` + `answer` is also a common SFT Q&A shape, so it
+ * stays Alpaca SFT unless the source declares `datasetType` `rl` (a DataForge
+ * export's metadata). Rows with an explicit SFT output
+ * (`output` / `response` / `completion`) or a conversation are never RL.
+ */
+export function resolveRlAnswerField(
+  row: Record<string, unknown>,
+  datasetType?: DatasetType,
+): string | undefined {
+  const prompt = row['prompt'];
+  const promptIsMessages = isMessagesArray(prompt);
+  const promptIsText = typeof prompt === 'string' && prompt.trim().length > 0;
+  if ((!promptIsMessages && !promptIsText) || 'messages' in row || 'chosen' in row) {
+    return undefined;
+  }
+  if (['output', 'response', 'completion'].some((field) => typeof row[field] === 'string')) {
+    return undefined;
+  }
+  if (promptIsMessages || datasetType === 'rl') {
+    return RL_ANSWER_FIELDS.find((field) => typeof row[field] === 'string');
+  }
+  return typeof row['solution'] === 'string' ? 'solution' : undefined;
 }
 
 /**
@@ -156,21 +203,48 @@ export function resolveTextField(row: Record<string, unknown>): string | undefin
 /**
  * Classify a single row to the most specific format it matches, or null when
  * it matches none. Order of precedence: dpo-pairs → kto-unpaired →
- * openai-messages → sharegpt → alpaca → text.
+ * prompt-answer → openai-messages → sharegpt → alpaca → text.
+ *
+ * Besides the canonical shapes this recognizes what the exporters write for
+ * other frameworks, so every export re-imports: OpenAI fine-tuning DPO
+ * (`input` + `preferred_output` / `non_preferred_output`), MS-SWIFT DPO
+ * (`messages` ending in the chosen reply + `rejected_response`), MS-SWIFT /
+ * LLaMA-Factory KTO (`messages` ending in the completion + `label`), TRL KTO
+ * with a message-array `prompt`, and GRPO prompt + answer rows (see
+ * {@link resolveRlAnswerField}; `datasetType` is the source's declared type,
+ * used only to settle that ambiguous shape).
  */
-export function classifyRow(row: unknown): DetectableFormat | null {
+export function classifyRow(row: unknown, datasetType?: DatasetType): DetectableFormat | null {
   if (typeof row === 'string') return row.trim().length > 0 ? 'text' : null;
   if (!isRecord(row)) return null;
 
-  if ('chosen' in row && 'rejected' in row && hasPromptField(row)) return 'dpo-pairs';
-
-  if (
-    'completion' in row &&
-    isKtoLabel(row['label']) &&
-    (typeof row['prompt'] === 'string' || isMessagesArray(row['messages']))
-  ) {
-    return 'kto-unpaired';
+  const hasPairs =
+    ('chosen' in row && 'rejected' in row) ||
+    ('preferred_output' in row && 'non_preferred_output' in row);
+  if (hasPairs && hasPromptField(row)) return 'dpo-pairs';
+  if (typeof row['rejected_response'] === 'string' && endsWithAssistant(row['messages'])) {
+    return 'dpo-pairs';
   }
+
+  if (isKtoLabel(row['label'])) {
+    if (
+      'completion' in row &&
+      (typeof row['prompt'] === 'string' ||
+        isMessagesArray(row['prompt']) ||
+        isMessagesArray(row['messages']))
+    ) {
+      return 'kto-unpaired';
+    }
+    if (
+      !('completion' in row) &&
+      isMessagesArray(row['messages']) &&
+      endsWithAssistant(row['messages'])
+    ) {
+      return 'kto-unpaired';
+    }
+  }
+
+  if (resolveRlAnswerField(row, datasetType) !== undefined) return 'prompt-answer';
 
   if (isMessagesArray(row['messages'])) return 'openai-messages';
 
@@ -238,6 +312,7 @@ function mostCommonField(
 function buildFieldMapping(
   format: SourceFormat,
   samples: readonly unknown[],
+  datasetType: DatasetType | undefined,
 ): Record<string, string> {
   switch (format) {
     case 'openai-messages':
@@ -266,11 +341,20 @@ function buildFieldMapping(
       const promptField = mostCommonField(
         samples,
         DPO_PROMPT_FIELDS,
-        (v) => typeof v === 'string' || Array.isArray(v),
+        (v) => typeof v === 'string' || Array.isArray(v) || isRecord(v),
       );
       if (promptField !== undefined) mapping[promptField] = 'messages';
-      mapping['chosen'] = 'chosen';
-      mapping['rejected'] = 'rejected';
+      const present = () => true;
+      // MS-SWIFT rows carry the chosen reply as the tail of `messages`.
+      const chosenField = mostCommonField(samples, ['chosen', 'preferred_output'], present);
+      if (chosenField !== undefined) mapping[chosenField] = 'chosen';
+      const rejectedField =
+        mostCommonField(
+          samples,
+          ['rejected', 'non_preferred_output', 'rejected_response'],
+          present,
+        ) ?? 'rejected';
+      mapping[rejectedField] = 'rejected';
       return mapping;
     }
 
@@ -281,7 +365,22 @@ function buildFieldMapping(
           ['prompt', 'messages'],
           (v) => typeof v === 'string' || Array.isArray(v),
         ) ?? 'prompt';
-      return { [promptField]: 'messages', completion: 'completion', label: 'label' };
+      const mapping: Record<string, string> = { [promptField]: 'messages', label: 'label' };
+      // Without a `completion` column the completion is the tail of `messages`.
+      if (mostCommonField(samples, ['completion'], () => true) !== undefined) {
+        mapping['completion'] = 'completion';
+      }
+      return mapping;
+    }
+
+    case 'prompt-answer': {
+      const counts = new Map<string, number>();
+      for (const row of samples) {
+        if (!isRecord(row)) continue;
+        const source = resolveRlAnswerField(row, datasetType);
+        if (source !== undefined) counts.set(source, (counts.get(source) ?? 0) + 1);
+      }
+      return { prompt: 'messages', [maxKey(counts) ?? 'answer']: 'answer' };
     }
 
     case 'text': {
@@ -318,9 +417,10 @@ function round4(value: number): number {
  * by the format's field specificity ({@link FORMAT_SPECIFICITY}); Alpaca rows
  * matched only through aliases score lower than canonical
  * `instruction`/`output` rows. Warnings flag mixed formats, unmatched rows,
- * and empty field values.
+ * and empty field values. `datasetType` is the type the source declares (a
+ * DataForge export's metadata), used only to settle ambiguous row shapes.
  */
-export function detectFormat(rows: unknown[]): DetectedSchema {
+export function detectFormat(rows: unknown[], datasetType?: DatasetType): DetectedSchema {
   const samples = rows.slice(0, DETECTION_SAMPLE_LIMIT);
   const sampleCount = samples.length;
 
@@ -339,7 +439,7 @@ export function detectFormat(rows: unknown[]): DetectedSchema {
   let alpacaCanonical = 0;
 
   for (const row of samples) {
-    const format = classifyRow(row);
+    const format = classifyRow(row, datasetType);
     if (format === null) {
       unmatched += 1;
       continue;
@@ -408,7 +508,7 @@ export function detectFormat(rows: unknown[]): DetectedSchema {
   return {
     format: bestFormat,
     confidence: round4(bestFormat === 'unknown' ? maxScore : bestConfidence),
-    fieldMapping: buildFieldMapping(bestFormat, samples),
+    fieldMapping: buildFieldMapping(bestFormat, samples, datasetType),
     sampleCount,
     warnings: warnings.slice(0, MAX_WARNINGS),
   };

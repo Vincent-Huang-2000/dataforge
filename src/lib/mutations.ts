@@ -2,7 +2,7 @@
  * Shared write operations. Every mutation stamps updatedAt and touches the
  * parent project so "last updated" ordering stays correct everywhere.
  */
-import { db } from '@/lib/db';
+import { bulkAddExamples, db } from '@/lib/db';
 import { createExample } from '@/engine/types';
 import type { DatasetType, Example, Message, Project, SplitName } from '@/engine/types';
 
@@ -10,15 +10,19 @@ async function touchProject(projectId: string): Promise<void> {
   await db.projects.update(projectId, { updatedAt: Date.now() });
 }
 
-export async function createProject(input: {
+interface CreateProjectInput {
+  /** Pre-assigned id, for examples converted before the project exists. */
+  id?: string;
   name: string;
   description?: string;
   targetModelId?: string | null;
   datasetType?: DatasetType;
-}): Promise<Project> {
+}
+
+export async function createProject(input: CreateProjectInput): Promise<Project> {
   const now = Date.now();
   const project: Project = {
-    id: crypto.randomUUID(),
+    id: input.id ?? crypto.randomUUID(),
     name: input.name.trim(),
     description: input.description?.trim() ?? '',
     targetModelId: input.targetModelId ?? null,
@@ -28,6 +32,22 @@ export async function createProject(input: {
   };
   await db.projects.add(project);
   return project;
+}
+
+/**
+ * Creates a project and its first examples in one transaction, so a failed
+ * write (e.g. quota exhaustion) never leaves an empty project behind. The
+ * examples must already carry `input.id` as their projectId.
+ */
+export async function createProjectWithExamples(
+  input: CreateProjectInput & { id: string },
+  examples: Example[],
+): Promise<Project> {
+  return db.transaction('rw', [db.projects, db.examples], async () => {
+    const project = await createProject(input);
+    await bulkAddExamples(examples);
+    return project;
+  });
 }
 
 export async function updateProject(

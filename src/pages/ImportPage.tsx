@@ -4,10 +4,11 @@
  * Four ways in: file upload, pasted text, Hugging Face Hub, raw documents.
  * Tab contents stay mounted (forceMount + hidden) so switching tabs never
  * loses an in-progress import. Documents parsed on the File tab hand their
- * text to the Document tab.
+ * text to the Document tab; so does a document opened from Home (via router
+ * state), which lands here with the Document tab already selected.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { FileDrop } from '@/components/import/FileDrop';
@@ -17,14 +18,21 @@ import { DocumentImport } from '@/components/import/DocumentImport';
 
 type ImportTab = 'file' | 'paste' | 'hf' | 'document';
 
+/** Router state Home's Open file dialog passes when the file was a document. */
+interface ImportRouteState {
+  doc?: { text: string; title: string };
+}
+
 export function ImportPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const [tab, setTab] = useState<ImportTab>('file');
-  const [doc, setDoc] = useState<{ text: string; title: string } | null>(null);
+  const location = useLocation();
+  const handedDoc = (location.state as ImportRouteState | null)?.doc ?? null;
+  const [tab, setTab] = useState<ImportTab>(handedDoc ? 'document' : 'file');
+  const [doc, setDoc] = useState<{ text: string; title: string } | null>(handedDoc);
 
   // A multi-file drop hands documents up one by one. Keep the first and count
   // the rest; the ref is reset when the user returns to a non-document tab.
-  const docOpenRef = useRef(false);
+  const docOpenRef = useRef(handedDoc !== null);
   const skippedDocsRef = useRef(0);
   const skipToastTimer = useRef<number | null>(null);
 

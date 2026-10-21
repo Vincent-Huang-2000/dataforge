@@ -310,8 +310,9 @@ export type SourceFormat =
   | 'openai-messages' // {"messages":[{role, content}]}
   | 'alpaca' // {instruction, input?, output}
   | 'sharegpt' // {"conversations":[{from, value}]}
-  | 'dpo-pairs' // {prompt|question|messages, chosen, rejected}
-  | 'kto-unpaired' // {prompt, completion, label}
+  | 'dpo-pairs' // {prompt|question|messages, chosen, rejected} (+ OpenAI FT, MS-SWIFT shapes)
+  | 'kto-unpaired' // {prompt, completion, label} or {messages, label}
+  | 'prompt-answer' // {prompt, answer|solution} → rl (GRPO)
   | 'text' // raw text rows → pretrain
   | 'unknown';
 

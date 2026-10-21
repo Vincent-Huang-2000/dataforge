@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DetectedSchema, SourceFormat } from '@/engine/types';
+import type { DatasetType, DetectedSchema, SourceFormat } from '@/engine/types';
 import { createExample } from '@/engine/types';
 import { detectFormat } from '@/engine/detection';
 import { buildCanonicalRows } from '@/engine/exporters/jsonl';
@@ -10,6 +10,7 @@ import {
   examplesToRows,
   extractThink,
   generateToolCallId,
+  inferDatasetType,
   normalizeRole,
   rowsToExamples,
 } from '@/engine/convert';
@@ -78,6 +79,17 @@ describe('extractThink', () => {
     const result = extractThink('<think>one</think><think>two</think>final');
     expect(result.reasoning).toBe('one\n\ntwo');
     expect(result.content).toBe('final');
+  });
+
+  it('extracts Seed-OSS and Mistral delimiters too', () => {
+    expect(extractThink('<seed:think>\nplan\n</seed:think>\n\nanswer')).toEqual({
+      content: 'answer',
+      reasoning: 'plan',
+    });
+    expect(extractThink('[THINK]plan[/THINK]answer')).toEqual({
+      content: 'answer',
+      reasoning: 'plan',
+    });
   });
 
   it('leaves content without complete think blocks untouched', () => {
@@ -696,6 +708,32 @@ describe('rowsToExamples — malformed rows', () => {
     expect(result.skipped).toBe(30);
     expect(result.errors).toHaveLength(MAX_IMPORT_ERRORS);
     expect(result.examples).toHaveLength(0);
+  });
+});
+
+describe('inferDatasetType', () => {
+  const ofTypes = (...types: DatasetType[]) => types.map((type) => ({ type }));
+
+  it('falls back to sft for an empty batch', () => {
+    expect(inferDatasetType([])).toBe('sft');
+  });
+
+  it('picks the most common example type', () => {
+    expect(inferDatasetType(ofTypes('sft', 'preference', 'preference'))).toBe('preference');
+    expect(inferDatasetType(ofTypes('pretrain', 'pretrain', 'kto'))).toBe('pretrain');
+  });
+
+  it('breaks ties in DATASET_TYPES order', () => {
+    expect(inferDatasetType(ofTypes('rl', 'kto'))).toBe('kto');
+    expect(inferDatasetType(ofTypes('pretrain', 'sft'))).toBe('sft');
+  });
+
+  it('follows the detected format end to end', () => {
+    const rows = [
+      { prompt: 'Q1', chosen: 'good', rejected: 'bad' },
+      { prompt: 'Q2', chosen: 'good', rejected: 'bad' },
+    ];
+    expect(inferDatasetType(importRows(rows).examples)).toBe('preference');
   });
 });
 
