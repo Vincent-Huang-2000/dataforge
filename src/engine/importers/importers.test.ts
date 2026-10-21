@@ -749,6 +749,26 @@ describe('parseFile — zip archives', () => {
     expect(file.rows).toEqual([{ a: 1 }, { a: 2 }, { a: 3 }]);
     expect(file.splits).toEqual(['train', 'train', 'validation']);
     expect(file.errors).toBeUndefined();
+    // Metadata without a DataForge generator declares nothing.
+    expect(file.datasetType).toBeUndefined();
+  });
+
+  it('carries the dataset type a DataForge export declares in metadata.json', async () => {
+    const metadata = { generator: 'DataForge Studio v2', options: { datasetType: 'rl' } };
+    const zip = zipSync({
+      'data/train.jsonl': strToU8('{"prompt":"Q","answer":"4"}\n'),
+      'metadata.json': strToU8(JSON.stringify(metadata)),
+    });
+    const file = expectRows(await parseFile({ name: 'export.zip', data: bufOf(zip) }));
+    expect(file.datasetType).toBe('rl');
+
+    const bogus = zipSync({
+      'data/train.jsonl': strToU8('{"a":1}\n'),
+      'metadata.json': strToU8('{"generator":"DataForge Studio v2","options":{"datasetType":"x"}}'),
+    });
+    expect(expectRows(await parseFile({ name: 'b.zip', data: bufOf(bogus) })).datasetType).toBe(
+      undefined,
+    );
   });
 
   it('prefixes parse diagnostics with the file they came from', async () => {

@@ -17,6 +17,7 @@ import type { Remote } from 'comlink';
 import type {
   CleaningOptions,
   DatasetQualitySummary,
+  DatasetType,
   DetectedSchema,
   Example,
   ImportResult,
@@ -74,8 +75,11 @@ export interface CleanedExample {
 export interface EngineWorkerApi {
   /** Parses an uploaded file (name + bytes) into rows or a text document. */
   parseFile(input: ParseFileInput): Promise<ParsedFile>;
-  /** Detects the source schema of tabular rows. */
-  detect(rows: unknown[]): DetectedSchema;
+  /**
+   * Detects the source schema of tabular rows. `datasetType` is the type the
+   * source declares (a DataForge export's metadata), used for ambiguous shapes.
+   */
+  detect(rows: unknown[], datasetType?: DatasetType): DetectedSchema;
   /**
    * Converts rows into canonical Examples for `projectId`. `splits`, when
    * given, is index-aligned with `rows` and sets each example's split.
@@ -197,7 +201,7 @@ export async function importFileToProject(
   }
 
   onPhase?.('detecting');
-  const schema = await api.detect(parsed.rows);
+  const schema = await api.detect(parsed.rows, parsed.datasetType);
 
   onPhase?.('converting');
   const result = await api.convert(parsed.rows, schema, projectId, parsed.splits);

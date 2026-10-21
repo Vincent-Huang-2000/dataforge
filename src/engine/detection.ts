@@ -10,7 +10,7 @@
  * No DOM, no React — safe to run in Web Workers and Node (vitest).
  */
 
-import type { DetectedSchema, SourceFormat } from '@/engine/types';
+import type { DatasetType, DetectedSchema, SourceFormat } from '@/engine/types';
 
 // ---------------------------------------------------------------------------
 // Constants (exported for reuse by convert.ts and the import UI)
@@ -148,19 +148,31 @@ function endsWithAssistant(value: unknown): boolean {
 }
 
 /**
- * The RL answer field of a prompt-answer row (`{prompt, answer|solution}`),
- * or undefined when the row is not one. Rows that also carry an explicit SFT
- * output (`output` / `response` / `completion`) or a conversation stay SFT.
+ * The RL answer field of a prompt-answer row, or undefined when the row is
+ * not one. Only unambiguous shapes count: a message-array `prompt` with an
+ * `answer`/`solution` (TRL / Unsloth GRPO), or a text `prompt` with a
+ * `solution`. A text `prompt` + `answer` is also a common SFT Q&A shape, so it
+ * stays Alpaca SFT unless the source declares `datasetType` `rl` (a DataForge
+ * export's metadata). Rows with an explicit SFT output
+ * (`output` / `response` / `completion`) or a conversation are never RL.
  */
-export function resolveRlAnswerField(row: Record<string, unknown>): string | undefined {
+export function resolveRlAnswerField(
+  row: Record<string, unknown>,
+  datasetType?: DatasetType,
+): string | undefined {
   const prompt = row['prompt'];
-  const hasPrompt =
-    (typeof prompt === 'string' && prompt.trim().length > 0) || isMessagesArray(prompt);
-  if (!hasPrompt || 'messages' in row || 'chosen' in row) return undefined;
+  const promptIsMessages = isMessagesArray(prompt);
+  const promptIsText = typeof prompt === 'string' && prompt.trim().length > 0;
+  if ((!promptIsMessages && !promptIsText) || 'messages' in row || 'chosen' in row) {
+    return undefined;
+  }
   if (['output', 'response', 'completion'].some((field) => typeof row[field] === 'string')) {
     return undefined;
   }
-  return RL_ANSWER_FIELDS.find((field) => typeof row[field] === 'string');
+  if (promptIsMessages || datasetType === 'rl') {
+    return RL_ANSWER_FIELDS.find((field) => typeof row[field] === 'string');
+  }
+  return typeof row['solution'] === 'string' ? 'solution' : undefined;
 }
 
 /**
@@ -198,9 +210,11 @@ export function resolveTextField(row: Record<string, unknown>): string | undefin
  * (`input` + `preferred_output` / `non_preferred_output`), MS-SWIFT DPO
  * (`messages` ending in the chosen reply + `rejected_response`), MS-SWIFT /
  * LLaMA-Factory KTO (`messages` ending in the completion + `label`), TRL KTO
- * with a message-array `prompt`, and TRL / Axolotl GRPO (`prompt` + `answer`).
+ * with a message-array `prompt`, and GRPO prompt + answer rows (see
+ * {@link resolveRlAnswerField}; `datasetType` is the source's declared type,
+ * used only to settle that ambiguous shape).
  */
-export function classifyRow(row: unknown): DetectableFormat | null {
+export function classifyRow(row: unknown, datasetType?: DatasetType): DetectableFormat | null {
   if (typeof row === 'string') return row.trim().length > 0 ? 'text' : null;
   if (!isRecord(row)) return null;
 
@@ -230,7 +244,7 @@ export function classifyRow(row: unknown): DetectableFormat | null {
     }
   }
 
-  if (resolveRlAnswerField(row) !== undefined) return 'prompt-answer';
+  if (resolveRlAnswerField(row, datasetType) !== undefined) return 'prompt-answer';
 
   if (isMessagesArray(row['messages'])) return 'openai-messages';
 
@@ -298,6 +312,7 @@ function mostCommonField(
 function buildFieldMapping(
   format: SourceFormat,
   samples: readonly unknown[],
+  datasetType: DatasetType | undefined,
 ): Record<string, string> {
   switch (format) {
     case 'openai-messages':
@@ -362,7 +377,7 @@ function buildFieldMapping(
       const counts = new Map<string, number>();
       for (const row of samples) {
         if (!isRecord(row)) continue;
-        const source = resolveRlAnswerField(row);
+        const source = resolveRlAnswerField(row, datasetType);
         if (source !== undefined) counts.set(source, (counts.get(source) ?? 0) + 1);
       }
       return { prompt: 'messages', [maxKey(counts) ?? 'answer']: 'answer' };
@@ -402,9 +417,10 @@ function round4(value: number): number {
  * by the format's field specificity ({@link FORMAT_SPECIFICITY}); Alpaca rows
  * matched only through aliases score lower than canonical
  * `instruction`/`output` rows. Warnings flag mixed formats, unmatched rows,
- * and empty field values.
+ * and empty field values. `datasetType` is the type the source declares (a
+ * DataForge export's metadata), used only to settle ambiguous row shapes.
  */
-export function detectFormat(rows: unknown[]): DetectedSchema {
+export function detectFormat(rows: unknown[], datasetType?: DatasetType): DetectedSchema {
   const samples = rows.slice(0, DETECTION_SAMPLE_LIMIT);
   const sampleCount = samples.length;
 
@@ -423,7 +439,7 @@ export function detectFormat(rows: unknown[]): DetectedSchema {
   let alpacaCanonical = 0;
 
   for (const row of samples) {
-    const format = classifyRow(row);
+    const format = classifyRow(row, datasetType);
     if (format === null) {
       unmatched += 1;
       continue;
@@ -492,7 +508,7 @@ export function detectFormat(rows: unknown[]): DetectedSchema {
   return {
     format: bestFormat,
     confidence: round4(bestFormat === 'unknown' ? maxScore : bestConfidence),
-    fieldMapping: buildFieldMapping(bestFormat, samples),
+    fieldMapping: buildFieldMapping(bestFormat, samples, datasetType),
     sampleCount,
     warnings: warnings.slice(0, MAX_WARNINGS),
   };

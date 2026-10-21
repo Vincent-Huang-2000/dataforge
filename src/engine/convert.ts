@@ -580,10 +580,17 @@ function convertKtoRow(row: unknown, projectId: string): Example {
   });
 }
 
-/** Prompt-only row with a verifiable answer (TRL / Axolotl GRPO) → rl example. */
-function convertPromptAnswerRow(row: unknown, projectId: string): Example {
+/**
+ * Prompt-only row with a verifiable answer (TRL / Axolotl GRPO) → rl example.
+ * The answer field is the one detection mapped (which honors a declared
+ * dataset type), else the row's own unambiguous RL field.
+ */
+function convertPromptAnswerRow(row: unknown, schema: DetectedSchema, projectId: string): Example {
   const record = requireRecord(row);
-  const answerField = resolveRlAnswerField(record);
+  const mapped = Object.keys(schema.fieldMapping).find(
+    (source) => schema.fieldMapping[source] === 'answer' && typeof record[source] === 'string',
+  );
+  const answerField = mapped ?? resolveRlAnswerField(record);
   if (answerField === undefined) {
     throw new Error('expected a "prompt" plus an "answer" or "solution" field');
   }
@@ -644,7 +651,7 @@ function convertRow(
     case 'kto-unpaired':
       return convertKtoRow(row, projectId);
     case 'prompt-answer':
-      return convertPromptAnswerRow(row, projectId);
+      return convertPromptAnswerRow(row, schema, projectId);
     case 'text':
       return convertTextRow(row, schema, projectId);
     case 'unknown': {

@@ -969,7 +969,8 @@ async function reimport(bundle: ExportBundle): Promise<ImportResult> {
   const data = zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength) as ArrayBuffer;
   const parsed = await parseFile({ name: 'export.zip', data });
   if (parsed.kind !== 'rows') throw new Error('expected the archive to parse as rows');
-  return rowsToExamples(parsed.rows, detectFormat(parsed.rows), PROJECT, parsed.splits);
+  const schema = detectFormat(parsed.rows, parsed.datasetType);
+  return rowsToExamples(parsed.rows, schema, PROJECT, parsed.splits);
 }
 
 /** What must survive a round trip (ids, loss weights and message names aside). */
@@ -1062,6 +1063,17 @@ describe('export → import round trip', () => {
     );
     const { examples: imported } = await reimport(bundle);
     expect(imported.map((ex) => ex.split)).toEqual(['train', 'validation']);
+  });
+
+  it('reads a bare Axolotl RL data file as SFT without the archive metadata', () => {
+    // {prompt, answer} text rows are ambiguous; only the export's metadata.json
+    // (present in the zip, gone once train.jsonl is extracted) marks them RL.
+    const data = rows(
+      buildExportBundle(rlExamples(), makeOptions({ framework: 'axolotl', datasetType: 'rl' })),
+    );
+    const { examples } = rowsToExamples(data, detectFormat(data), PROJECT);
+    expect(examples.map((ex) => ex.type)).toEqual(['sft']);
+    expect(examples[0].messages.at(-1)).toEqual({ role: 'assistant', content: '4' });
   });
 
   it('links re-created LLaMA-Factory tool calls to their tool results', async () => {

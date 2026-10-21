@@ -16,8 +16,8 @@ import { parseXlsx } from './xlsx';
 import { parsePdf } from './pdf';
 import { parseDocx } from './docx';
 import { parseTextDocument } from './textdoc';
-import { listArchiveFiles, splitFromFileName } from './zip';
-import type { SplitName } from '@/engine/types';
+import { readArchive, splitFromFileName } from './zip';
+import type { DatasetType, SplitName } from '@/engine/types';
 
 // Re-export the individual parsers so consumers (worker wrapper, import
 // pipeline) have a single entry point.
@@ -38,8 +38,8 @@ export {
   DEFAULT_CHUNK_OVERLAP,
 } from './textdoc';
 export type { ChunkTextOptions } from './textdoc';
-export { listArchiveFiles, splitFromFileName } from './zip';
-export type { ArchiveEntry } from './zip';
+export { readArchive, splitFromFileName } from './zip';
+export type { ArchiveContents, ArchiveEntry } from './zip';
 
 /** Input accepted by {@link parseFile}. */
 export interface ParseFileInput {
@@ -54,12 +54,20 @@ export interface ParseFileInput {
  *  - `rows`     — tabular data (JSONL/JSON/CSV/Parquet/XLSX, or every such
  *                 file inside a ZIP); schema detection happens downstream.
  *                 `errors` carries non-fatal per-row diagnostics when present;
- *                 `splits` (archives only) is index-aligned with `rows`.
+ *                 `splits` (archives only) is index-aligned with `rows`;
+ *                 `datasetType` (archives only) is the type a DataForge
+ *                 export declares in its metadata, a hint for detection.
  *  - `document` — unstructured text (PDF/DOCX/MD/TXT) plus a title derived
  *                 from the file name.
  */
 export type ParsedFile =
-  | { kind: 'rows'; rows: unknown[]; errors?: string[]; splits?: SplitName[] }
+  | {
+      kind: 'rows';
+      rows: unknown[];
+      errors?: string[];
+      splits?: SplitName[];
+      datasetType?: DatasetType;
+    }
   | { kind: 'document'; text: string; title: string };
 
 /** Internal format token produced by {@link detectFormat}. */
@@ -226,10 +234,11 @@ export async function parseFile(input: ParseFileInput): Promise<ParsedFile> {
 /**
  * Parses every dataset file inside a ZIP archive into one row set. Each row's
  * split comes from its file name; parse diagnostics are prefixed with the
- * file they came from.
+ * file they came from; a DataForge export's declared dataset type rides along
+ * as a detection hint.
  */
 async function parseArchive(data: ArrayBuffer): Promise<ParsedFile> {
-  const entries = listArchiveFiles(data, (path) => {
+  const { entries, datasetType } = readArchive(data, (path) => {
     const format = EXTENSION_FORMATS[extensionOf(path)];
     return format !== undefined && ARCHIVE_ROW_FORMATS.has(format);
   });
@@ -251,7 +260,8 @@ async function parseArchive(data: ArrayBuffer): Promise<ParsedFile> {
     }
     for (const error of parsed.errors ?? []) errors.push(`${entry.name}: ${error}`);
   }
-  return errors.length > 0
-    ? { kind: 'rows', rows, splits, errors }
-    : { kind: 'rows', rows, splits };
+  const parsed: ParsedFile = { kind: 'rows', rows, splits };
+  if (errors.length > 0) parsed.errors = errors;
+  if (datasetType !== undefined) parsed.datasetType = datasetType;
+  return parsed;
 }
