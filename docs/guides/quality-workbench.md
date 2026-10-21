@@ -82,22 +82,24 @@ Dedup 和 Decontaminate 的扫描结果只保留在各自组件的 React 状态�
 
 | 分类 | IssueType | 严重度 | 判定 |
 |---|---|---|---|
-| 消息结构 | `missing_role` | critical / high | 单条消息 role 为空；或整个样本没有 user；SFT 没有 assistant。 |
+| 消息结构 | `missing_role` | critical / high | 单条消息 role 为空；或整个样本没有 user（Pretrain 除外）；SFT 没有 assistant。 |
 | 消息结构 | `invalid_role` | high | role 不在 `system`、`developer`、`user`、`assistant`、`tool` 中。能映射到 `ROLE_ALIASES` 的别名标记为可自动修复。 |
 | 消息结构 | `empty_field` | critical | 样本没有 messages，或消息既无非空 content、reasoning，也无 tool calls。 |
-| 对话顺序 | `incoherent_turn_order` | medium / high | assistant 早于第一个 user；连续 `user → user`；或 Preference prompt 的末条不是 user。 |
-| 长度 | `too_short` | medium | user / assistant 内容少于 10 字符，纯 tool-call assistant 例外。 |
-| 长度 | `too_long` | high | user / assistant 内容超过 32,000 字符。 |
-| 长度 | `imbalanced_ratio` | medium / low | 非 RL 样本中，assistant:user 内容长度比低于 0.1 或高于 50。 |
-| 回答模式 | `refusal_pattern` | high | assistant 内容命中已知拒答开头；`rejected` continuation 不检查，因为拒答可构成有效的偏好负样本。 |
+| 对话顺序 | `incoherent_turn_order` | medium / high | assistant 早于第一个 user；连续 `user → user`；或 Preference prompt 的末条不是 user；或 Pretrain 样本不是恰好一条纯 assistant 消息（high）。 |
+| 长度 | `too_short` | medium | user / assistant 内容少于 10 字符，纯 tool-call assistant 例外；Pretrain 正文少于 50 字符（`PRETRAIN_TOO_SHORT_CHARS`）。 |
+| 长度 | `too_long` | high | user / assistant 内容超过 32,000 字符；Pretrain 不检查（长文档正常，packing 会跨序列切分）。 |
+| 长度 | `imbalanced_ratio` | medium / low | 非 RL、非 Pretrain 样本中，assistant:user 内容长度比低于 0.1 或高于 50。 |
+| 回答模式 | `refusal_pattern` | high | assistant 内容命中已知拒答开头；`rejected` continuation 不检查，因为拒答可构成有效的偏好负样本；Pretrain 正文是语料原文而非模型回复，也不检查。 |
 | 隐私 | `pii_detected` | high | content 或 reasoning 中包含邮箱、SSN、银行卡号、IP 地址或电话号码。 |
 | 编码 | `encoding_error` | medium | 检测到 mojibake 特征、替换字符、null byte 或字节转义异常。 |
 | 模板兼容 | `special_token_conflict` | medium / high | content 或 reasoning 含 chat template 控制 token。目标模型存在时只检查该模板家族，并使用 high；否则检查全部已知 token，严重度为 medium。 |
 | 工具调用 | `malformed_tool_call` | high | assistant tool call 的 `arguments` 非 JSON，或 tool 消息缺少 `toolCallId`。 |
 | 工具调用 | `orphan_tool_result` | high | tool 消息的 `toolCallId` 未引用此前 assistant 声明过的 call id。 |
 | 类型字段 | `empty_field` | critical | Preference 缺非空 `chosen` / `rejected`；KTO 缺非空 `completion` 或布尔 `label`；RL 缺非空 `answer`。 |
-| 模型兼容 | `context_overflow` | critical | 仅目标模型已选时，样本 token 数超过 `ModelInfo.recommendedSeqLen`。 |
+| 模型兼容 | `context_overflow` | critical / low | 仅目标模型已选时，样本 token 数超过 `ModelInfo.recommendedSeqLen`。Pretrain 降为 low：超长文本会跨多个序列训练而非被截断。 |
 | 数据集级 | `duplicate` | high | 仅 `analyzeDataset()` 路径：后出现的样本与先前样本的规范化全量签名相同。 |
+
+**Pretrain 样本**（原始文本，存为单条 assistant 消息）只做内容类检查：`empty_field`、`too_short`、`pii_detected`、`encoding_error`、`special_token_conflict`、结构不变量、`context_overflow`（low）与数据集级 `duplicate`；角色、对话顺序、长度比、拒答检查全部跳过（`collectIssues` 中 `checkPretrainShape` 与 `checkConversation` 二选一）。
 
 **不是严格的“两条消息一问一答”校验。** 系统支持多轮对话、`system` / `developer`、以及 `assistant(toolCalls) → tool → assistant` 轨迹。当前顺序规则显式报告连续 user 和 assistant 早于 user；它不单独把连续 assistant 设为 issue。
 
@@ -109,6 +111,8 @@ Dedup 和 Decontaminate 的扫描结果只保留在各自组件的 React 状态�
 - `formatting`：格式化相关的质量信号；
 - `lengthBalance`：问答长度比例及总体有效长度；
 - `contentQuality`：medium、low issue 的惩罚。
+
+Pretrain 的 `completeness` 只看正文是否非空（0 或 1）；`lengthBalance` 按正文长度分档（空 0、< 50 字符 0.5、< 200 字符 0.8、其余 1），不计算问答比例。
 
 样本存在 issue 或长度不平衡时，权重为 completeness 0.20、formatting 0.20、lengthBalance 0.35、contentQuality 0.25；无 issue 且平衡时四项等权。分数用于排序和人工审阅，不替代对训练目标的人工判断。
 
@@ -134,7 +138,7 @@ Clean 是可配置的修复流水线，不会运行 Quality scan 的所有规则
 | `normalizeRoles` | Normalize roles | 将 `human`、`gpt` 等已知别名归一为规范 role。 |
 | `fixEncoding` | Fix encoding | 修复已知 mojibake，并移除 null byte。 |
 | `normalizeWhitespace` | Normalize whitespace | 压缩过量空行、移除行尾空白、裁剪边界空白。 |
-| `removeRefusals` | Remove refusals | 从 assistant 内容移除已知拒答开头及其所在句的剩余部分。 |
+| `removeRefusals` | Remove refusals | 从 assistant 内容移除已知拒答开头及其所在句的剩余部分；不作用于 `rejected`、reasoning 与 Pretrain 正文。 |
 | `maskPii` | Mask PII | 将邮箱、电话、SSN、银行卡和 IP 替换为占位符。 |
 | `removeSpecialTokens` | Remove special tokens | 从消息文本移除已知 chat template 控制 token。 |
 
@@ -263,6 +267,12 @@ Quality scan
 3. 若 UI 没有活跃 issue 以供推导严重度，更新 `ScanSection.tsx` 的 `FALLBACK_SEVERITY`。
 4. 为正常、边界和错误路径更新 `src/engine/quality.test.ts`。
 5. 更新本文件的规则清单；若涉及样本结构约束，同时更新 `data-model.md`。
+
+### 新增或修改数据集类型
+
+1. 在 `collectIssues()` 中决定新类型走 `checkConversation()` 还是独立的形状检查（参考 Pretrain 的 `checkPretrainShape()`），并逐条评估 `checkMessage()` 的长度、拒答规则是否适用。
+2. 补齐 `completenessScore()` / `lengthBalanceScore()` 分支，以及 `cleanExample()` 是否允许拒答删除。
+3. 更新 `quality.test.ts`，并同步本文件规则清单与 `data-model.md` 的类型表。
 
 ### 新增或修改清洗操作
 
