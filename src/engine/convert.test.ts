@@ -81,6 +81,17 @@ describe('extractThink', () => {
     expect(result.content).toBe('final');
   });
 
+  it('extracts Seed-OSS and Mistral delimiters too', () => {
+    expect(extractThink('<seed:think>\nplan\n</seed:think>\n\nanswer')).toEqual({
+      content: 'answer',
+      reasoning: 'plan',
+    });
+    expect(extractThink('[THINK]plan[/THINK]answer')).toEqual({
+      content: 'answer',
+      reasoning: 'plan',
+    });
+  });
+
   it('leaves content without complete think blocks untouched', () => {
     expect(extractThink('no tags here')).toEqual({ content: 'no tags here' });
     expect(extractThink('<think>unclosed')).toEqual({ content: '<think>unclosed' });

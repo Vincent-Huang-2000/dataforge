@@ -2,10 +2,12 @@
  * DataForge V2 — conversion between raw source rows and canonical Examples.
  *
  * {@link rowsToExamples} turns detected source rows (OpenAI messages,
- * ShareGPT, Alpaca, DPO pairs, KTO, raw text → pretrain) into canonical `Example`
- * records: roles are normalized, `<think>` traces are extracted into the
- * structural `reasoning` field, tool calls are passed through with generated
- * ids when missing, and invalid rows are skipped with error strings.
+ * ShareGPT, Alpaca, DPO pairs, KTO, prompt + answer → rl, raw text →
+ * pretrain — including every shape the exporters write) into canonical
+ * `Example` records: roles are normalized, inline think blocks are extracted
+ * into the structural `reasoning` field, tool calls are passed through with
+ * generated ids when missing (and tool results linked to them), and invalid
+ * rows are skipped with error strings.
  * {@link inferDatasetType} picks the project type a converted batch implies.
  *
  * {@link examplesToRows} is the inverse for legacy export shapes
@@ -22,6 +24,7 @@ import type {
   Message,
   Role,
   SourceFormat,
+  SplitName,
   ToolCall,
   ToolDefinition,
 } from '@/engine/types';
@@ -29,9 +32,11 @@ import { DATASET_TYPES, createExample, pretrainText } from '@/engine/types';
 import {
   ALPACA_ALIASES,
   DPO_PROMPT_FIELDS,
+  RL_ANSWER_FIELDS,
   classifyRow,
   isRecord,
   resolveAlpacaField,
+  resolveRlAnswerField,
   resolveTextField,
 } from '@/engine/detection';
 
@@ -87,18 +92,28 @@ export function normalizeRole(value: unknown): Role {
 }
 
 /**
- * Extract `<think>…</think>` blocks from message content into a separate
- * reasoning string. Returns the cleaned content plus the joined reasoning
- * (omitted when no complete block is present).
+ * Complete inline reasoning blocks in every delimiter style the exporters
+ * write: `<think>…</think>`, Seed-OSS `<seed:think>…</seed:think>` and
+ * Mistral `[THINK]…[/THINK]`.
+ */
+const THINK_BLOCK =
+  /<think>([\s\S]*?)<\/think>|<seed:think>([\s\S]*?)<\/seed:think>|\[THINK\]([\s\S]*?)\[\/THINK\]/gi;
+
+/**
+ * Extract inline reasoning blocks ({@link THINK_BLOCK}) from message content
+ * into a separate reasoning string. Returns the cleaned content plus the
+ * joined reasoning (omitted when no complete block is present).
  */
 export function extractThink(content: string): { content: string; reasoning?: string } {
-  const pattern = /<think>([\s\S]*?)<\/think>/gi;
   const parts: string[] = [];
-  const stripped = content.replace(pattern, (_match, inner: string) => {
-    const trimmed = inner.trim();
-    if (trimmed.length > 0) parts.push(trimmed);
-    return '';
-  });
+  const stripped = content.replace(
+    THINK_BLOCK,
+    (_match, think?: string, seedThink?: string, mistralThink?: string) => {
+      const trimmed = (think ?? seedThink ?? mistralThink ?? '').trim();
+      if (trimmed.length > 0) parts.push(trimmed);
+      return '';
+    },
+  );
   if (parts.length === 0) return { content };
   return { content: stripped.trim(), reasoning: parts.join('\n\n') };
 }
@@ -159,11 +174,22 @@ function normalizeToolCalls(value: unknown, context: string): ToolCall[] {
   });
 }
 
-/** Normalize a top-level `tools` array to canonical {@link ToolDefinition}s. */
+/**
+ * Normalize a top-level `tools` array to canonical {@link ToolDefinition}s.
+ * MS-SWIFT and LLaMA-Factory ship the array as a JSON string.
+ */
 function normalizeToolDefinitions(value: unknown): ToolDefinition[] | undefined {
-  if (!Array.isArray(value) || value.length === 0) return undefined;
+  let tools = value;
+  if (typeof tools === 'string') {
+    try {
+      tools = JSON.parse(tools) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+  if (!Array.isArray(tools) || tools.length === 0) return undefined;
   const definitions: ToolDefinition[] = [];
-  for (const item of value) {
+  for (const item of tools) {
     if (!isRecord(item)) continue;
     const fn = isRecord(item['function']) ? item['function'] : item;
     const name = fn['name'];
@@ -182,6 +208,73 @@ function normalizeToolDefinitions(value: unknown): ToolDefinition[] | undefined 
 // Message normalization
 // ---------------------------------------------------------------------------
 
+/** LLaMA-Factory's tool-call turn: an assistant call whose content is JSON. */
+const FUNCTION_CALL_ROLE = 'function_call';
+
+/** Parse a `function_call` turn's content (one call object or an array). */
+function parseFunctionCall(value: unknown, context: string): ToolCall[] {
+  let parsed: unknown = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      throw new Error(`${context}: function_call content is not valid JSON`);
+    }
+  }
+  return normalizeToolCalls(Array.isArray(parsed) ? parsed : [parsed], context);
+}
+
+/**
+ * Fill missing `toolCallId`s on tool turns from the preceding assistant
+ * calls, in order. LLaMA-Factory and ShareGPT tool turns carry no call ids.
+ */
+function linkToolResults(messages: Message[]): Message[] {
+  let pending: ToolCall[] = [];
+  for (const message of messages) {
+    if (message.role === 'assistant' && message.toolCalls !== undefined) {
+      pending = [...message.toolCalls];
+    } else if (message.role === 'tool') {
+      if (message.toolCallId !== undefined) {
+        pending = pending.filter((call) => call.id !== message.toolCallId);
+      } else {
+        const call = pending.shift();
+        if (call !== undefined) message.toolCallId = call.id;
+      }
+    }
+  }
+  return messages;
+}
+
+/** Normalize a raw message array and link its tool results to their calls. */
+function normalizeMessages(raw: readonly unknown[]): Message[] {
+  return linkToolResults(raw.map((item, index) => normalizeMessage(item, index)));
+}
+
+/** A row field that must be a non-empty message array, normalized. */
+function requireMessages(value: unknown, field: string): Message[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`"${field}" must be a non-empty array`);
+  }
+  return normalizeMessages(value);
+}
+
+/**
+ * Split a conversation whose tail is the reply (MS-SWIFT DPO, MS-SWIFT /
+ * LLaMA-Factory KTO) into the prompt and its trailing assistant turns.
+ */
+function splitTrailingReply(
+  messages: Message[],
+  label: string,
+): { prompt: Message[]; reply: Message[] } {
+  let start = messages.length;
+  while (start > 0 && messages[start - 1].role === 'assistant') start -= 1;
+  if (start === messages.length) {
+    throw new Error(`"messages" must end with the ${label} assistant turn`);
+  }
+  if (start === 0) throw new Error(`"messages" has no prompt before the ${label}`);
+  return { prompt: messages.slice(0, start), reply: messages.slice(start) };
+}
+
 /**
  * Normalize one raw message object (OpenAI keys, or ShareGPT keys remapped by
  * the caller) into a canonical {@link Message}: role aliases, content
@@ -192,7 +285,16 @@ function normalizeMessage(raw: unknown, index: number): Message {
   if (!isRecord(raw)) throw new Error(`message ${index} is not an object`);
   if (!('role' in raw)) throw new Error(`message ${index} is missing "role"`);
 
-  const role = normalizeRole(raw['role']);
+  const rawRole = raw['role'];
+  if (typeof rawRole === 'string' && rawRole.trim().toLowerCase() === FUNCTION_CALL_ROLE) {
+    return {
+      role: 'assistant',
+      content: '',
+      toolCalls: parseFunctionCall(raw['content'], `message ${index}`),
+    };
+  }
+
+  const role = normalizeRole(rawRole);
   const message: Message = { role, content: contentToString(raw['content'], `message ${index}`) };
 
   const fieldReasoning = firstString(raw, REASONING_FIELDS);
@@ -252,23 +354,23 @@ function normalizeContinuation(value: unknown, label: string): Message[] {
     if (value.trim().length === 0) throw new Error(`"${label}" is empty`);
     return [assistantFromString(value)];
   }
-  if (Array.isArray(value) && value.length > 0) {
-    return value.map((item, index) => normalizeMessage(item, index));
-  }
+  if (Array.isArray(value) && value.length > 0) return normalizeMessages(value);
   if (isRecord(value)) return [normalizeMessage(value, 0)];
   throw new Error(`"${label}" must be a string, a message, or a message array`);
 }
 
 /**
- * Extract the prompt portion of a DPO/KTO row as messages. String prompts
+ * Extract the prompt portion of a DPO/KTO/RL row as messages. String prompts
  * become a single user turn (with a system turn prepended when the row has a
- * system field); message-list prompts are normalized and kept as-is.
+ * system field); message-list prompts (or an OpenAI fine-tuning
+ * `{ messages }` input object) are normalized and kept as-is.
  */
 function promptMessages(row: Record<string, unknown>): Message[] {
   for (const field of DPO_PROMPT_FIELDS) {
     const value = row[field];
-    if (Array.isArray(value) && value.length > 0) {
-      return value.map((item, index) => normalizeMessage(item, index));
+    if (Array.isArray(value) && value.length > 0) return normalizeMessages(value);
+    if (isRecord(value) && Array.isArray(value['messages']) && value['messages'].length > 0) {
+      return normalizeMessages(value['messages']);
     }
     if (typeof value === 'string' && value.trim().length > 0) {
       const messages: Message[] = [];
@@ -307,17 +409,16 @@ function resolveMappedString(
 
 function convertOpenAiRow(row: unknown, projectId: string): Example {
   const record = requireRecord(row);
-  const raw = record['messages'];
-  if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error('"messages" must be a non-empty array');
-  }
-  const messages = raw.map((item, index) => normalizeMessage(item, index));
+  const messages = requireMessages(record['messages'], 'messages');
   applyRowReasoning(record, messages);
   const tools = normalizeToolDefinitions(record['tools']);
-  // RL rows (prompt-only conversation + verifiable answer) share the canonical
-  // messages shape — keep their type and answer instead of degrading to SFT.
-  const answer = record['answer'];
-  if (typeof answer === 'string' && !messages.some((m) => m.role === 'assistant')) {
+  // RL rows (prompt-only conversation + verifiable answer; MS-SWIFT names it
+  // `solution`) share the canonical messages shape — keep their type and
+  // answer instead of degrading to SFT.
+  const answer = RL_ANSWER_FIELDS.map((field) => record[field]).find(
+    (value): value is string => typeof value === 'string',
+  );
+  if (answer !== undefined && !messages.some((m) => m.role === 'assistant')) {
     return createExample({
       projectId,
       type: 'rl',
@@ -357,13 +458,16 @@ function convertShareGptRow(row: unknown, projectId: string): Example {
   if (!Array.isArray(turns) || turns.length === 0) {
     throw new Error('"conversations" must be a non-empty array');
   }
-  const messages = turns.map((turn, index) => {
-    if (!isRecord(turn)) throw new Error(`conversation turn ${index} is not an object`);
-    return normalizeMessage(
-      { ...turn, role: turn['from'] ?? turn['role'], content: turn['value'] ?? turn['content'] },
-      index,
-    );
-  });
+  const messages = normalizeMessages(
+    turns.map((turn, index) => {
+      if (!isRecord(turn)) throw new Error(`conversation turn ${index} is not an object`);
+      return {
+        ...turn,
+        role: turn['from'] ?? turn['role'],
+        content: turn['value'] ?? turn['content'],
+      };
+    }),
+  );
   const system = firstString(record, ALPACA_ALIASES.system);
   if (system !== undefined && !messages.some((m) => m.role === 'system')) {
     messages.unshift({ role: 'system', content: system });
@@ -401,18 +505,41 @@ function convertAlpacaRow(row: unknown, schema: DetectedSchema, projectId: strin
   return createExample({ projectId, messages, meta: { sourceFormat: 'alpaca' } });
 }
 
+/**
+ * Preference row → preference example. Accepts canonical/TRL
+ * `{prompt, chosen, rejected}`, OpenAI fine-tuning
+ * `{input: {messages, tools?}, preferred_output, non_preferred_output}` and
+ * MS-SWIFT `{messages: prompt + chosen, rejected_response}`.
+ */
 function convertDpoRow(row: unknown, projectId: string): Example {
   const record = requireRecord(row);
-  const messages = promptMessages(record);
-  const chosen = normalizeContinuation(record['chosen'], 'chosen');
-  const rejected = normalizeContinuation(record['rejected'], 'rejected');
+  let messages: Message[];
+  let chosen: Message[];
+  let rejected: Message[];
+  if (typeof record['rejected_response'] === 'string' && !('rejected' in record)) {
+    const split = splitTrailingReply(requireMessages(record['messages'], 'messages'), 'chosen');
+    messages = split.prompt;
+    chosen = split.reply;
+    rejected = normalizeContinuation(record['rejected_response'], 'rejected_response');
+  } else {
+    const [chosenField, rejectedField] =
+      'preferred_output' in record && !('chosen' in record)
+        ? ['preferred_output', 'non_preferred_output']
+        : ['chosen', 'rejected'];
+    messages = promptMessages(record);
+    chosen = normalizeContinuation(record[chosenField], chosenField);
+    rejected = normalizeContinuation(record[rejectedField], rejectedField);
+  }
+  const input = record['input'];
   return createExample({
     projectId,
     type: 'preference',
     messages,
     chosen,
     rejected,
-    tools: normalizeToolDefinitions(record['tools']),
+    tools: normalizeToolDefinitions(
+      record['tools'] ?? (isRecord(input) ? input['tools'] : undefined),
+    ),
     meta: { sourceFormat: 'dpo-pairs' },
   });
 }
@@ -425,10 +552,22 @@ function normalizeLabel(value: unknown): boolean {
   throw new Error('"label" must be a boolean, 0/1, or "true"/"false"');
 }
 
+/**
+ * KTO row → kto example: `{prompt|messages, completion, label}`, or MS-SWIFT /
+ * LLaMA-Factory `{messages: prompt + completion, label}`.
+ */
 function convertKtoRow(row: unknown, projectId: string): Example {
   const record = requireRecord(row);
-  const messages = promptMessages(record);
-  const completion = normalizeContinuation(record['completion'], 'completion');
+  let messages: Message[];
+  let completion: Message[];
+  if ('completion' in record) {
+    messages = promptMessages(record);
+    completion = normalizeContinuation(record['completion'], 'completion');
+  } else {
+    const split = splitTrailingReply(requireMessages(record['messages'], 'messages'), 'completion');
+    messages = split.prompt;
+    completion = split.reply;
+  }
   const label = normalizeLabel(record['label']);
   return createExample({
     projectId,
@@ -438,6 +577,23 @@ function convertKtoRow(row: unknown, projectId: string): Example {
     label,
     tools: normalizeToolDefinitions(record['tools']),
     meta: { sourceFormat: 'kto-unpaired' },
+  });
+}
+
+/** Prompt-only row with a verifiable answer (TRL / Axolotl GRPO) → rl example. */
+function convertPromptAnswerRow(row: unknown, projectId: string): Example {
+  const record = requireRecord(row);
+  const answerField = resolveRlAnswerField(record);
+  if (answerField === undefined) {
+    throw new Error('expected a "prompt" plus an "answer" or "solution" field');
+  }
+  return createExample({
+    projectId,
+    type: 'rl',
+    messages: promptMessages(record),
+    answer: record[answerField] as string,
+    tools: normalizeToolDefinitions(record['tools']),
+    meta: { sourceFormat: 'prompt-answer' },
   });
 }
 
@@ -487,6 +643,8 @@ function convertRow(
       return convertDpoRow(row, projectId);
     case 'kto-unpaired':
       return convertKtoRow(row, projectId);
+    case 'prompt-answer':
+      return convertPromptAnswerRow(row, projectId);
     case 'text':
       return convertTextRow(row, schema, projectId);
     case 'unknown': {
@@ -506,12 +664,15 @@ function convertRow(
  * schema. Invalid rows are skipped and counted; at most
  * {@link MAX_IMPORT_ERRORS} per-row error strings are retained. When the
  * schema format is `unknown`, each row is classified individually and
- * converted on a best-effort basis.
+ * converted on a best-effort basis. `splits`, when given, is index-aligned
+ * with `rows` (e.g. from the file names inside an export archive) and sets
+ * each example's split; otherwise examples default to `train`.
  */
 export function rowsToExamples(
   rows: unknown[],
   schema: DetectedSchema,
   projectId: string,
+  splits?: readonly SplitName[],
 ): ImportResult {
   const examples: Example[] = [];
   const errors: string[] = [];
@@ -519,7 +680,10 @@ export function rowsToExamples(
 
   for (let i = 0; i < rows.length; i += 1) {
     try {
-      examples.push(convertRow(rows[i], schema.format, schema, projectId));
+      const example = convertRow(rows[i], schema.format, schema, projectId);
+      const split = splits?.[i];
+      if (split !== undefined) example.split = split;
+      examples.push(example);
     } catch (error) {
       skipped += 1;
       if (errors.length < MAX_IMPORT_ERRORS) {
