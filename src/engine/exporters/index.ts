@@ -67,12 +67,13 @@ export class UnsupportedExportError extends Error {
  * - The OpenAI fine-tuning API only accepts supervised chat and DPO rows.
  * - Legacy Alpaca cannot carry KTO labels or RL answers; legacy ShareGPT
  *   cannot carry any structural column beyond the conversation itself.
+ * - Raw-text pretrain rows have no OpenAI FT, Alpaca or ShareGPT shape.
  */
 const UNSUPPORTED_COMBOS: Partial<Record<FrameworkId, readonly DatasetType[]>> = {
   'llama-factory': ['rl'],
-  'openai-ft': ['kto', 'rl'],
-  alpaca: ['kto', 'rl'],
-  sharegpt: ['preference', 'kto', 'rl'],
+  'openai-ft': ['kto', 'rl', 'pretrain'],
+  alpaca: ['kto', 'rl', 'pretrain'],
+  sharegpt: ['preference', 'kto', 'rl', 'pretrain'],
 };
 
 /** Whether {@link buildExportBundle} supports the framework × type combo. */

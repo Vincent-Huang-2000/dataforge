@@ -33,6 +33,7 @@ const TYPE_LABELS: Record<DatasetType, string> = {
   preference: 'paired preference (DPO / ORPO)',
   kto: 'unpaired preference (KTO)',
   rl: 'prompt + verifiable answer (GRPO / RLVR)',
+  pretrain: 'raw text (continued pretraining)',
 };
 
 /** Dataset stats rendered into the README (computed by the bundle assembler). */
@@ -88,8 +89,11 @@ function datasetSection(options: ExportOptions, model?: ModelInfo, stats?: Readm
         : 'not selected — replace the model placeholder in the config/script before training'
     }`,
   );
-  lines.push(`- **Reasoning traces:** ${describeReasoning(options, model)}`);
-  lines.push(`- **System turns:** ${options.includeSystem ? 'included' : 'removed'}`);
+  // Raw text has no reasoning traces or system turns to describe.
+  if (options.datasetType !== 'pretrain') {
+    lines.push(`- **Reasoning traces:** ${describeReasoning(options, model)}`);
+    lines.push(`- **System turns:** ${options.includeSystem ? 'included' : 'removed'}`);
+  }
   lines.push(`- **Data files:** ${dataFilesLine(options, stats)}`);
   return lines.join('\n');
 }
@@ -105,6 +109,8 @@ function trlTrainerName(type: DatasetType): string {
       return 'KTOTrainer (from `trl.experimental.kto` as of TRL 1.5)';
     case 'rl':
       return 'GRPOTrainer';
+    case 'pretrain':
+      return 'SFTTrainer (language modeling over the raw `text` column)';
   }
 }
 
@@ -158,10 +164,17 @@ function frameworkSection(
       return [
         '## Use the canonical JSONL',
         '',
-        'Each line is an OpenAI-style `messages` object; preference / KTO / RL exports keep',
-        'their structural columns (`chosen` / `rejected` / `completion` / `label` / `answer`)',
-        'and per-example `tools` schemas. This shape loads directly into most 2026 trainers',
-        '(TRL, Axolotl `type: chat_template`, MS-SWIFT, …).',
+        ...(options.datasetType === 'pretrain'
+          ? [
+              'Each line is a raw-text `{"text": …}` object — the language-modeling shape read by',
+              'TRL `dataset_text_field="text"`, Axolotl `type: completion` and LLaMA-Factory `stage: pt`.',
+            ]
+          : [
+              'Each line is an OpenAI-style `messages` object; preference / KTO / RL exports keep',
+              'their structural columns (`chosen` / `rejected` / `completion` / `label` / `answer`)',
+              'and per-example `tools` schemas. This shape loads directly into most 2026 trainers',
+              '(TRL, Axolotl `type: chat_template`, MS-SWIFT, …).',
+            ]),
         '',
         codeBlock(
           'python',
@@ -235,7 +248,9 @@ function frameworkSection(
         codeBlock('bash', ['pip install "unsloth==2026.6.*"', 'python train.py'].join('\n')),
         '',
         'The generated `train.py` loads the base model 4-bit via `FastLanguageModel`,',
-        'attaches LoRA adapters, and runs the TRL trainer matching this dataset type.',
+        options.datasetType === 'pretrain'
+          ? 'attaches LoRA adapters (including `embed_tokens` / `lm_head`), appends EOS to each\ndocument and runs `UnslothTrainer` continued pretraining with a separate embedding learning rate.'
+          : 'attaches LoRA adapters, and runs the TRL trainer matching this dataset type.',
       ].join('\n');
     case 'openai-ft':
       return [

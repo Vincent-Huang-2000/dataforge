@@ -30,6 +30,7 @@ import type {
   SplitName,
   ToolDefinition,
 } from '@/engine/types';
+import { pretrainText } from '@/engine/types';
 import { examplesToRows } from '@/engine/convert';
 import { renderToolCallText } from '@/engine/templates';
 
@@ -273,15 +274,26 @@ function messagesContext(example: Example): 'prompt' | 'final' {
 }
 
 /**
+ * Raw-text rows `{ text }` for pretrain exports — the language-modeling shape
+ * read by Axolotl `type: completion`, TRL/Unsloth `dataset_text_field` and
+ * LLaMA-Factory `stage: pt`. Text is emitted verbatim (no chat framing).
+ */
+export function buildTextRows(examples: Example[]): Record<string, unknown>[] {
+  return examples.map((ex) => ({ text: pretrainText(ex) }));
+}
+
+/**
  * Canonical OpenAI-messages rows — the universal 2026 interchange shape.
  * Structural columns (chosen / rejected / completion / label / answer / tools)
- * are preserved so preference, KTO and RL examples round-trip losslessly.
+ * are preserved so preference, KTO and RL examples round-trip losslessly;
+ * pretrain examples emit `{ text }`, which re-imports as pretrain.
  */
 export function buildCanonicalRows(
   examples: Example[],
   ctx: RenderContext,
 ): Record<string, unknown>[] {
   return examples.map((ex) => {
+    if (ex.type === 'pretrain') return { text: pretrainText(ex) };
     const row: Record<string, unknown> = {
       messages: renderMessages(ex.messages, ctx, { context: messagesContext(ex) }),
     };

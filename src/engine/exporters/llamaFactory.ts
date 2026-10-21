@@ -3,7 +3,8 @@
  *
  * Emits a sharegpt-formatted data file with role/content tags, the matching
  * `dataset_info.json` entry (ranking for preference, kto_tag for KTO) and a
- * `llamafactory.yaml` train config (stage sft|dpo|kto, LoRA).
+ * `llamafactory.yaml` train config (stage sft|dpo|kto, LoRA). Pretrain emits
+ * raw `{text}` rows with an alpaca `prompt` column mapping and `stage: pt`.
  *
  * Caveat: assistant turns that carry tool calls are rendered as a single
  * `function_call` message whose content is the call JSON (LLaMA-Factory's
@@ -16,6 +17,7 @@
 import { stringify } from 'yaml';
 import type { DatasetType, Example, Message, TemplateFamily } from '@/engine/types';
 import {
+  buildTextRows,
   flattenMessagesText,
   inlineReasoningStyle,
   inlineThink,
@@ -132,6 +134,7 @@ function lfTools(ex: Example): string | undefined {
  * - sft        → { messages, tools? }
  * - preference → { messages: prompt, chosen: {role, content}, rejected: {role, content}, tools? }
  * - kto        → { messages: prompt + completion, label, tools? }
+ * - pretrain   → { text } (alpaca-format `prompt` column, read by `stage: pt`)
  * - rl is not representable in LLaMA-Factory and throws upstream.
  */
 export function buildLlamaFactoryRows(
@@ -142,6 +145,7 @@ export function buildLlamaFactoryRows(
   if (type === 'rl') {
     throw new Error('LLaMA-Factory export does not support the "rl" dataset type');
   }
+  if (type === 'pretrain') return buildTextRows(examples);
   return examples.map((ex) => {
     const row: Record<string, unknown> = {};
     if (type === 'sft') {
@@ -169,6 +173,9 @@ function datasetInfoEntry(
   fileName: string,
   hasTools: boolean,
 ): Record<string, unknown> {
+  // Pretraining corpora use the default alpaca formatting with the raw text
+  // mapped onto the `prompt` column.
+  if (type === 'pretrain') return { file_name: fileName, columns: { prompt: 'text' } };
   const columns: Record<string, string> = { messages: 'messages' };
   if (type === 'preference') {
     columns['chosen'] = 'chosen';
@@ -208,16 +215,24 @@ export function buildLlamaFactoryDatasetInfo(
   return `${JSON.stringify(info, null, 2)}\n`;
 }
 
+/** LLaMA-Factory training stage per dataset type (rl is rejected upstream). */
+const LF_STAGES: Record<DatasetType, string> = {
+  sft: 'sft',
+  preference: 'dpo',
+  kto: 'kto',
+  rl: 'sft',
+  pretrain: 'pt',
+};
+
 /**
- * Build `llamafactory.yaml`: stage sft|dpo|kto, LoRA finetuning over the
+ * Build `llamafactory.yaml`: stage sft|dpo|kto|pt, LoRA finetuning over the
  * registry model, cutoff_len from the model's recommended SFT length, and the
  * validation dataset wired as `eval_dataset` when present.
  */
 export function buildLlamaFactoryTrainYaml(ctx: RenderContext, dataFiles: SplitFileMap): string {
   const { options, model } = ctx;
   const slug = datasetSlug(options.projectName);
-  const stage =
-    options.datasetType === 'preference' ? 'dpo' : options.datasetType === 'kto' ? 'kto' : 'sft';
+  const stage = LF_STAGES[options.datasetType];
 
   const config: Record<string, unknown> = {
     model_name_or_path: model?.hfId ?? 'REPLACE_WITH_BASE_MODEL',

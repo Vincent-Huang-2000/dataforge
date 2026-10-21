@@ -4,7 +4,8 @@
  * Emits messages JSONL in the swift dialect: preference rows put the chosen
  * continuation inline in `messages` with the alternative as a flat
  * `rejected_response` string; KTO rows append the completion to `messages`
- * with a boolean `label`; tools travel as a JSON *string* field; reasoning is
+ * with a boolean `label`; pretrain rows are a lone assistant message holding
+ * the raw text; tools travel as a JSON *string* field; reasoning is
  * always inlined as `<think>…</think>` (swift convention, regardless of the
  * target model's native delimiters). The matching `swift` CLI command is
  * rendered into the bundle README.
@@ -13,6 +14,7 @@
  */
 
 import type { Example } from '@/engine/types';
+import { pretrainText } from '@/engine/types';
 import {
   flattenMessagesText,
   renderMessages,
@@ -41,12 +43,18 @@ function swiftTools(ex: Example): string | undefined {
  * - preference → { messages: prompt + chosen, rejected_response, tools? }
  * - kto        → { messages: prompt + completion, label, tools? }
  * - rl         → { messages: prompt, solution } (read by swift's accuracy ORM)
+ * - pretrain   → { messages: [{ role: assistant, content: text }] } (`swift pt`)
  */
 export function buildMsSwiftRows(
   examples: Example[],
   ctx: RenderContext,
 ): Record<string, unknown>[] {
   const type = ctx.options.datasetType;
+  if (type === 'pretrain') {
+    return examples.map((ex) => ({
+      messages: [{ role: 'assistant', content: pretrainText(ex) }],
+    }));
+  }
   return examples.map((ex) => {
     const row: Record<string, unknown> = {};
     if (type === 'sft') {
@@ -109,6 +117,9 @@ export function buildMsSwiftCommand(ctx: RenderContext, trainFile: string): stri
       break;
     case 'rl':
       head = 'swift rlhf --rlhf_type grpo --reward_funcs accuracy';
+      break;
+    case 'pretrain':
+      head = 'swift pt';
       break;
   }
   return [head, ...common].join(' \\\n');
