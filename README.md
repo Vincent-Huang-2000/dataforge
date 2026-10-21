@@ -16,7 +16,7 @@ Everything runs in your browser. There is no server, no account, no upload. Your
 - Files: JSONL, JSON, CSV, Parquet, Excel, PDF, DOCX, Markdown, plain text, and ZIP archives (an export bundle reopens with its train/validation/test splits)
 - Hugging Face datasets, streamed straight from the Hub
 - Paste from clipboard
-- Auto-detects Alpaca, ShareGPT, OpenAI messages, DPO pairs, KTO and prompt/answer (RL) formats, including every shape DataForge exports for TRL, Axolotl, LLaMA-Factory, MS-SWIFT, Unsloth and OpenAI fine-tuning
+- Auto-detects Alpaca, ShareGPT, OpenAI messages, DPO pairs, KTO and RL prompt + verifiable-answer formats, including every shape DataForge exports for TRL, Axolotl, LLaMA-Factory, MS-SWIFT, Unsloth and OpenAI fine-tuning
 
 **Four dataset types, stored properly**
 - SFT chat conversations, including tool calls and reasoning traces as structured fields
