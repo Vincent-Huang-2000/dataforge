@@ -6,6 +6,7 @@
  * records: roles are normalized, `<think>` traces are extracted into the
  * structural `reasoning` field, tool calls are passed through with generated
  * ids when missing, and invalid rows are skipped with error strings.
+ * {@link inferDatasetType} picks the project type a converted batch implies.
  *
  * {@link examplesToRows} is the inverse for legacy export shapes
  * (openai-messages / alpaca / sharegpt).
@@ -14,6 +15,7 @@
  */
 
 import type {
+  DatasetType,
   DetectedSchema,
   Example,
   ImportResult,
@@ -23,7 +25,7 @@ import type {
   ToolCall,
   ToolDefinition,
 } from '@/engine/types';
-import { createExample, pretrainText } from '@/engine/types';
+import { DATASET_TYPES, createExample, pretrainText } from '@/engine/types';
 import {
   ALPACA_ALIASES,
   DPO_PROMPT_FIELDS,
@@ -527,6 +529,28 @@ export function rowsToExamples(
   }
 
   return { examples, schema, skipped, errors };
+}
+
+/**
+ * Project-level dataset type for a batch of converted examples: the most
+ * common example type, ties broken by {@link DATASET_TYPES} order. Empty
+ * input falls back to `sft`.
+ */
+export function inferDatasetType(examples: readonly Pick<Example, 'type'>[]): DatasetType {
+  const counts = new Map<DatasetType, number>();
+  for (const example of examples) {
+    counts.set(example.type, (counts.get(example.type) ?? 0) + 1);
+  }
+  let best: DatasetType = 'sft';
+  let bestCount = 0;
+  for (const type of DATASET_TYPES) {
+    const count = counts.get(type) ?? 0;
+    if (count > bestCount) {
+      best = type;
+      bestCount = count;
+    }
+  }
+  return best;
 }
 
 // ---------------------------------------------------------------------------
