@@ -119,6 +119,8 @@ function blankContent(type: DatasetType): Partial<Example> & Pick<Example, 'mess
       };
     case 'rl':
       return { messages, answer: '' };
+    case 'pretrain':
+      return { messages: [{ role: 'assistant', content: '' }] };
     case 'sft':
       return { messages };
   }

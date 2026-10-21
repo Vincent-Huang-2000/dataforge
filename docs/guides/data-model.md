@@ -18,6 +18,7 @@ flowchart TD
     type --> preference["preference：prompt + chosen/rejected"]
     type --> kto["kto：prompt + completion + label"]
     type --> rl["rl：仅 prompt + 可验证 answer"]
+    type --> pretrain["pretrain：单条 assistant 消息承载原始文本"]
 
     messages --> Message["Message"]
     Message --> role["role（必有）"]
@@ -69,7 +70,8 @@ flowchart TD
 
 | 规则 | 对应质检项 |
 |---|---|
-| 至少一条 `user` 消息（所有类型） | `missing_role`（"No user message found"） |
+| 至少一条 `user` 消息（pretrain 以外的所有类型） | `missing_role`（"No user message found"） |
+| **pretrain 类型**恰好一条不带 `reasoning`/`toolCalls`/`weight` 的 assistant 消息 | `incoherent_turn_order` |
 | **sft 类型**至少一条 `assistant` 消息（rl 天然无 assistant，不检查） | `missing_role`（"No assistant message found"） |
 | preference 类型的 prompt 必须以 user 轮结尾 | `incoherent_turn_order` |
 | preference 的 `chosen`/`rejected` 非空；kto 的 `completion` 非空且 `label` 为布尔；rl 的 `answer` 为非空字符串 | `empty_field` |
@@ -80,10 +82,12 @@ flowchart TD
 |---|---|---|
 | assistant 轮不得出现在首个 user 轮之前 | `incoherent_turn_order` | medium |
 | 不允许连续两条 user（应合并） | `incoherent_turn_order` | medium |
-| user/assistant 内容过短（< 10 字符，纯 tool call 除外） | `too_short` | medium |
-| user/assistant 内容过长（> 32,000 字符） | `too_long` | high |
-| assistant:user 长度比失衡（< 0.1 或 > 50；rl 类型不检查） | `imbalanced_ratio` | medium / low |
-| assistant 出现拒绝话术（`rejected` 字段中除外——那是 DPO 的合法负样本信号） | `refusal_pattern` | high |
+| user/assistant 内容过短（< 10 字符，纯 tool call 除外；pretrain 文本阈值为 < 50 字符） | `too_short` | medium |
+| user/assistant 内容过长（> 32,000 字符；pretrain 不检查） | `too_long` | high |
+| assistant:user 长度比失衡（< 0.1 或 > 50；rl、pretrain 类型不检查） | `imbalanced_ratio` | medium / low |
+| assistant 出现拒绝话术（`rejected` 字段与 pretrain 语料除外——前者是 DPO 的合法负样本信号，后者是原文而非模型回复） | `refusal_pattern` | high |
+
+上表中 turn order 两条规则同样不检查 pretrain。
 
 ### 3.4 最小合法样例
 
@@ -120,6 +124,7 @@ flowchart TD
 | `preference` | 仅 **prompt 部分**（system/user 与多轮上下文） | `chosen`、`rejected`（各 1+ 条 assistant 续写） | prompt 以 **user 轮结尾**；正负续写均非空 |
 | `kto` | prompt 部分 | `completion`（被标注的续写）、`label`（布尔） | 同 prompt 通用约束 |
 | `rl` | prompt-only 对话 | `answer`（可验证答案字符串） | **无 assistant**；最后一条为 user；不做长度比检查 |
+| `pretrain` | 原始文本，存为**恰好一条** assistant 消息（`content` 即正文） | — | **无 user**；不带 `reasoning`/`toolCalls`/`weight`；不做角色、轮次、长度比检查 |
 
 最小样例：
 
@@ -134,7 +139,13 @@ flowchart TD
 { "type": "rl",
   "messages": [ { "role": "user", "content": "Solve: 2x + 4 = 10" } ],
   "answer": "x = 3" }
+
+// pretrain：原始文本存为唯一一条 assistant 消息（导出时还原为 {"text": …}）
+{ "type": "pretrain",
+  "messages": [ { "role": "assistant", "content": "The Seine flows through Paris…" } ] }
 ```
+
+pretrain 选择"单条 assistant 消息"而非独立 `text` 字段，是为了让清洗（PII 脱敏、编码修复）、去重、基准污染筛查、搜索等围绕 `messages` 的管线无需改动即可覆盖正文；读取正文统一用 `types.ts` 的 `pretrainText(example)`。只有按角色做语义判断的位置需要显式分支（见 §6）。
 
 ---
 
@@ -157,6 +168,7 @@ flowchart TD
 - 未知角色：`normalizeRole` **抛错**，该行被跳过并计入 `ImportResult.errors`（上限 `MAX_IMPORT_ERRORS = 20`）。
 - 思维链来源字段：`reasoning` / `reasoning_content` / `thinking`（`REASONING_FIELDS`）；content 内嵌的 `<think>…</think>` 块经 `extractThink` 拆分为独立 `reasoning`。
 - 反向映射 `SHAREGPT_FROM`（导出 ShareGPT 时）：`developer → system`、`user → human`、`assistant → gpt`、`tool → observation`。
+- 原始文本 → pretrain：`detection.ts` 把纯字符串行、单字符串字段行，以及含 `text`/`content` 字符串字段的多列行（`TEXT_FIELDS`，预训练语料常带 `id`/`url`/`meta` 等列）判为 `text` 格式，`convertTextRow` 产出 `type: 'pretrain'` 的单条 assistant 消息。`convertOpenAiRow` 把"仅一条不带 reasoning/toolCalls/tools 的 assistant 消息"（MS-SWIFT 预训练格式）也识别为 pretrain，保证导出可往返。
 
 ### 5.2 质检映射（`src/engine/quality.ts`）
 
@@ -174,11 +186,12 @@ flowchart TD
 - **reasoning 渲染**：mistral-tekken → `[THINK]…[/THINK]`；harmony → analysis 通道；其余 → `<think>…</think>`。
 - **JSONL（canonical OpenAI 格式）导出**：`includeSystem` 关闭时过滤 system/developer；`includeReasoning` / `stripPriorThinking` 控制 reasoning 保留（`thinking` 字段或内联 think 标签）；`toolCalls` → `tool_calls` 数组。
 - **llama-factory 导出**：`lfRole` 将 developer → system 标签、tool → observation 标签。
+- **pretrain 导出**：不经过任何角色渲染，正文原样输出。canonical JSONL / Axolotl / TRL / LLaMA-Factory / Unsloth 输出 `{"text": …}`（`jsonl.ts` 的 `buildTextRows`）；MS-SWIFT 输出 `{"messages":[{"role":"assistant","content":…}]}`（`swift pt`）；OpenAI FT、Alpaca、ShareGPT 不支持（`UNSUPPORTED_COMBOS`）。
 
 ### 5.4 UI 呈现
 
-- 网格编辑器（`components/inspector/MessageCard.tsx`）：每行消息一个角色下拉框，选项即 `ALL_ROLES`（五种角色），并有按角色着色的 chip。
-- 分析页（`pages/AnalyticsPage.tsx`）：`ROLE_ORDER` 决定角色统计的展示顺序。
+- 网格编辑器（`components/inspector/MessageCard.tsx`）：每行消息一个角色下拉框，选项即 `ALL_ROLES`（五种角色），并有按角色着色的 chip。pretrain 样本不使用消息卡片，由 `PretrainEditor.tsx` 以单个文本框编辑，每次编辑都把 `messages` 重写为一条纯 assistant 消息以维持不变量。
+- 分析页（`pages/AnalyticsPage.tsx`）：`ROLE_ORDER` 决定角色统计的展示顺序；pretrain 样本不计入角色与轮次统计。
 
 ---
 
@@ -197,5 +210,21 @@ flowchart TD
 | `src/components/inspector/MessageCard.tsx` | `ALL_ROLES`（UI 下拉框选项） |
 | `src/pages/AnalyticsPage.tsx` | `ROLE_ORDER`（统计排序） |
 | 测试 | `convert.test.ts`、`templates.test.ts` 及 quality 相关用例 |
+
+**新增或修改 `DatasetType`** 时，除 `Record<DatasetType, …>` 映射表与穷尽 `switch`（`tsc` 会报错）外，还需人工检查以下不会被类型系统发现的位置：
+
+| 文件 | 需同步内容 |
+|---|---|
+| `src/engine/types.ts` | `DatasetType`、`DATASET_TYPES`、`Example.messages` 注释（真相源） |
+| `src/engine/quality.ts` | `collectIssues` 的类型分支、`completenessScore` / `lengthBalanceScore` |
+| `src/engine/tokens.ts` | `countExample` 是否计入每条消息的模板开销 |
+| `src/engine/exporters/index.ts` | `UNSUPPORTED_COMBOS` |
+| `src/engine/exporters/*.ts` | 各框架行构造与配置（含 `readme.ts` 的说明文字） |
+| `src/pages/DatasetPage.tsx` | URL `type` 参数白名单（`DATASET_TYPES`） |
+| `src/components/dataset/FilterBar.tsx` | 类型筛选下拉项 |
+| `src/components/home/NewProjectDialog.tsx` | `TYPE_OPTIONS` |
+| `src/components/dataset/DataGrid.tsx` | `buildPreview` 网格摘要 |
+| `src/components/generate/TargetPicker.tsx` | `AI_ELIGIBLE_TYPES`（AI 操作可作用的类型） |
+| 测试 | `detection` / `convert` / `quality` / `tokens` / `exporters` 测试的类型用例与支持矩阵 |
 
 **重要约束**：新增角色前先评估导出层是否支持——绝大多数模板家族不认识任意新角色，需要提前决定降级策略（参考 `developer → system` 的既有做法）。`engine/` 层新增逻辑必须保持「无 DOM、无 React、无副作用」，可在 Web Worker 与 Node（vitest）中运行。

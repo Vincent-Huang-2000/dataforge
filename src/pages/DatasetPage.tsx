@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { DATASET_TYPES } from '@/engine/types';
 import { useFilteredDataset, useProject, type ExampleFilters } from '@/lib/hooks';
 import { addExample } from '@/lib/mutations';
 import { DEFAULT_INSPECTOR_DOCK_WIDTH, useUiStore } from '@/lib/store';
@@ -46,7 +47,7 @@ function filtersFromParams(params: URLSearchParams): ExampleFilters {
   const type = params.get('type');
   return {
     split: split === 'train' || split === 'validation' || split === 'test' ? split : 'all',
-    type: type === 'sft' || type === 'preference' || type === 'kto' || type === 'rl' ? type : 'all',
+    type: DATASET_TYPES.find((t) => t === type) ?? 'all',
     search: params.get('q') ?? '',
     flaggedOnly: params.get('flagged') === '1',
     withIssuesOnly: params.get('issues') === '1',

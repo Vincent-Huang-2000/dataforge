@@ -3,6 +3,7 @@ import type { CleaningOptions, Example, IssueType, Message, ModelInfo, Role } fr
 import { createExample } from '@/engine/types';
 import {
   DEFAULT_CLEANING,
+  PRETRAIN_TOO_SHORT_CHARS,
   TOO_LONG_CHARS,
   analyzeDataset,
   analyzeExample,
@@ -937,5 +938,100 @@ describe('cleanExample — contracts', () => {
     ] as const) {
       expect(after).not.toContain(type);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pretrain
+// ---------------------------------------------------------------------------
+
+/** A clean pretrain example: one assistant message holding the raw text. */
+function cleanPretrain(text: string = ASSISTANT_TEXT, extra: Partial<Example> = {}): Example {
+  return createExample({
+    projectId: PROJECT,
+    type: 'pretrain',
+    messages: [msg('assistant', text)],
+    ...extra,
+  });
+}
+
+describe('analyzeExample — pretrain', () => {
+  it('reports no issues and a perfect score for clean raw text', () => {
+    const report = analyzeExample(cleanPretrain());
+    expect(report.issues).toEqual([]);
+    expect(report.score).toBe(100);
+  });
+
+  it('skips conversation checks (roles, turn order, length balance)', () => {
+    const types = issueTypes(cleanPretrain());
+    for (const type of ['missing_role', 'incoherent_turn_order', 'imbalanced_ratio'] as const) {
+      expect(types).not.toContain(type);
+    }
+  });
+
+  it('never fires too_long, and fires too_short below the pretrain threshold', () => {
+    expect(issueTypes(cleanPretrain('x'.repeat(TOO_LONG_CHARS + 1)))).not.toContain('too_long');
+    expect(issueTypes(cleanPretrain('x'.repeat(PRETRAIN_TOO_SHORT_CHARS - 1)))).toContain(
+      'too_short',
+    );
+    expect(issueTypes(cleanPretrain('x'.repeat(PRETRAIN_TOO_SHORT_CHARS)))).not.toContain(
+      'too_short',
+    );
+  });
+
+  it('does not treat refusal phrasing in corpus text as a refusal', () => {
+    const text = "I'm sorry, but I can't help with that request — the character said, and left.";
+    expect(issueTypes(cleanPretrain(text))).not.toContain('refusal_pattern');
+  });
+
+  it('still flags PII, encoding errors and special tokens', () => {
+    const types = issueTypes(
+      cleanPretrain(`${ASSISTANT_TEXT} Contact me at jane.doe@example.com <|im_start|> cafÃ©`),
+    );
+    expect(types).toContain('pii_detected');
+    expect(types).toContain('special_token_conflict');
+    expect(types).toContain('encoding_error');
+  });
+
+  it('flags a pretrain example that is not a single plain assistant message', () => {
+    const twoMessages = cleanPretrain(ASSISTANT_TEXT, {
+      messages: [msg('user', USER_TEXT), msg('assistant', ASSISTANT_TEXT)],
+    });
+    const withReasoning = cleanPretrain(ASSISTANT_TEXT, {
+      messages: [msg('assistant', ASSISTANT_TEXT, { reasoning: 'hidden' })],
+    });
+    for (const example of [twoMessages, withReasoning]) {
+      const issue = analyzeExample(example).issues.find((i) => i.type === 'incoherent_turn_order');
+      expect(issue?.severity).toBe('high');
+    }
+  });
+
+  it('downgrades context_overflow to low severity', () => {
+    const issue = analyzeExample(cleanPretrain(), {
+      targetModel: model({ recommendedSeqLen: 10 }),
+    }).issues.find((i) => i.type === 'context_overflow');
+    expect(issue?.severity).toBe('low');
+  });
+
+  it('scores empty text as incomplete', () => {
+    const report = analyzeExample(cleanPretrain(''));
+    expect(report.components.completeness).toBe(0);
+    expect(report.issues.map((i) => i.type)).toContain('empty_field');
+  });
+});
+
+describe('cleanExample — pretrain', () => {
+  it('never strips refusal phrasing from pretrain text', () => {
+    const text = 'As an AI language model, I cannot browse. The robot repeated the line twice.';
+    const { example: out } = cleanExample(cleanPretrain(text), only('removeRefusals'));
+    expect(out.messages[0].content).toBe(text);
+  });
+
+  it('masks PII inside pretrain text', () => {
+    const { example: out } = cleanExample(
+      cleanPretrain('Write to jane.doe@example.com for the full report.'),
+      only('maskPii'),
+    );
+    expect(out.messages[0].content).toBe('Write to [EMAIL] for the full report.');
   });
 });

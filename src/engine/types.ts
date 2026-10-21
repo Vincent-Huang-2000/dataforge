@@ -22,10 +22,12 @@
  * preference — paired DPO/ORPO data (prompt + chosen + rejected)
  * kto        — unpaired preference (prompt + completion + boolean label)
  * rl         — prompt-only + verifiable answer (GRPO / RLVR / verl-style)
+ * pretrain   — raw text for continued pretraining; stored as exactly one
+ *              assistant message (no reasoning / tool calls / weight)
  */
-export type DatasetType = 'sft' | 'preference' | 'kto' | 'rl';
+export type DatasetType = 'sft' | 'preference' | 'kto' | 'rl' | 'pretrain';
 
-export const DATASET_TYPES: DatasetType[] = ['sft', 'preference', 'kto', 'rl'];
+export const DATASET_TYPES: DatasetType[] = ['sft', 'preference', 'kto', 'rl', 'pretrain'];
 
 export type Role = 'system' | 'developer' | 'user' | 'assistant' | 'tool';
 
@@ -78,6 +80,7 @@ export interface Example {
    * - preference: the PROMPT portion (system/user/multi-turn context).
    * - kto:        the prompt portion; completion lives in `completion`.
    * - rl:         the prompt-only conversation (last turn = user).
+   * - pretrain:   a single assistant message whose content is the raw text.
    */
   messages: Message[];
   /** preference: chosen assistant continuation (1+ messages). */
@@ -133,6 +136,12 @@ export function createExample(
     answer: partial.answer,
     tools: partial.tools,
   };
+}
+
+/** Raw text of a pretrain example (its single message's content; '' when absent). */
+export function pretrainText(example: Pick<Example, 'messages'>): string {
+  const content = example.messages[0]?.content;
+  return typeof content === 'string' ? content : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -303,7 +312,7 @@ export type SourceFormat =
   | 'sharegpt' // {"conversations":[{from, value}]}
   | 'dpo-pairs' // {prompt|question|messages, chosen, rejected}
   | 'kto-unpaired' // {prompt, completion, label}
-  | 'text' // raw text rows
+  | 'text' // raw text rows → pretrain
   | 'unknown';
 
 export interface DetectedSchema {

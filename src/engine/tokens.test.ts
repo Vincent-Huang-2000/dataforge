@@ -196,6 +196,15 @@ describe('countExample', () => {
     expect(countExample(bare)).toBe(7 + MESSAGE_TOKEN_OVERHEAD); // 11
   });
 
+  it('counts pretrain text without per-message overhead', () => {
+    const example = createExample({
+      projectId: 'p1',
+      type: 'pretrain',
+      messages: [msg('assistant', 'The quick brown fox jumps over the lazy dog.')],
+    });
+    expect(countExample(example)).toBe(10);
+  });
+
   it('returns 0 for an example with no messages', () => {
     const example = createExample({ projectId: 'p1', messages: [] });
     expect(countExample(example)).toBe(0);

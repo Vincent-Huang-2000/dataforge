@@ -50,6 +50,7 @@ const TYPE_TONES: Record<DatasetType, BadgeProps['tone']> = {
   preference: 'accent',
   kto: 'warn',
   rl: 'ok',
+  pretrain: 'neutral',
 };
 
 const TYPE_LABELS: Record<DatasetType, string> = {
@@ -57,6 +58,7 @@ const TYPE_LABELS: Record<DatasetType, string> = {
   preference: 'DPO',
   kto: 'KTO',
   rl: 'RL',
+  pretrain: 'PT',
 };
 
 /** Dataset-type chip used in grids, headers and export panels. */

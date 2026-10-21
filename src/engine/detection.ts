@@ -41,6 +41,13 @@ export const ALPACA_CANONICAL_FIELDS = ['instruction', 'output', 'input', 'syste
 /** Accepted prompt-carrying fields for DPO / KTO rows, in priority order. */
 export const DPO_PROMPT_FIELDS: readonly string[] = ['prompt', 'question', 'messages', 'input'];
 
+/**
+ * Fields that carry the body of a raw-text (pretrain) row, in priority order.
+ * Pretraining corpora usually ship extra columns (`id`, `url`, `meta`, …)
+ * next to the text, so these are matched even on multi-column rows.
+ */
+export const TEXT_FIELDS: readonly string[] = ['text', 'content'];
+
 /** A concretely detectable format (everything except the 'unknown' sentinel). */
 export type DetectableFormat = Exclude<SourceFormat, 'unknown'>;
 
@@ -137,6 +144,16 @@ export function resolveAlpacaField(
 }
 
 /**
+ * Resolve the source field carrying a raw-text row's body: the only field of
+ * a single-string-field row, else the first {@link TEXT_FIELDS} string field.
+ */
+export function resolveTextField(row: Record<string, unknown>): string | undefined {
+  const keys = Object.keys(row);
+  if (keys.length === 1 && typeof row[keys[0]] === 'string') return keys[0];
+  return TEXT_FIELDS.find((field) => typeof row[field] === 'string');
+}
+
+/**
  * Classify a single row to the most specific format it matches, or null when
  * it matches none. Order of precedence: dpo-pairs → kto-unpaired →
  * openai-messages → sharegpt → alpaca → text.
@@ -173,8 +190,7 @@ export function classifyRow(row: unknown): DetectableFormat | null {
     return 'alpaca';
   }
 
-  const keys = Object.keys(row);
-  if (keys.length === 1 && typeof row[keys[0]] === 'string') return 'text';
+  if (resolveTextField(row) !== undefined) return 'text';
 
   return null;
 }
@@ -272,13 +288,11 @@ function buildFieldMapping(
       const counts = new Map<string, number>();
       for (const row of samples) {
         if (!isRecord(row)) continue;
-        const keys = Object.keys(row);
-        if (keys.length === 1 && typeof row[keys[0]] === 'string') {
-          counts.set(keys[0], (counts.get(keys[0]) ?? 0) + 1);
-        }
+        const source = resolveTextField(row);
+        if (source !== undefined) counts.set(source, (counts.get(source) ?? 0) + 1);
       }
       const best = maxKey(counts);
-      return best !== undefined ? { [best]: 'messages' } : {};
+      return best !== undefined ? { [best]: 'text' } : {};
     }
 
     case 'unknown':

@@ -5,7 +5,8 @@
  * defaults. Preference data uses `rl: dpo` with a `user_defined.default`
  * dataset over flattened-text {prompt, chosen, rejected} columns; KTO uses
  * `rl: kto` over {prompt, completion, label}; RL/GRPO emits {prompt, answer}
- * with a config stub the user completes with reward functions.
+ * with a config stub the user completes with reward functions. Pretrain emits
+ * raw {text} rows read by a `type: completion` dataset with sample packing.
  *
  * Runtime-environment agnostic: no DOM, no React.
  */
@@ -13,6 +14,7 @@
 import { stringify } from 'yaml';
 import type { DatasetType, Example } from '@/engine/types';
 import {
+  buildTextRows,
   flattenMessagesText,
   renderMessages,
   renderToolDefinitions,
@@ -40,6 +42,7 @@ const BASE_MODEL_PLACEHOLDER = 'REPLACE_WITH_BASE_MODEL';
  * - preference → { prompt, chosen, rejected } flattened text
  * - kto        → { prompt, completion, label } flattened text
  * - rl         → { prompt, answer } flattened text
+ * - pretrain   → { text } raw text (completion consumption)
  */
 export function buildAxolotlRows(
   examples: Example[],
@@ -70,6 +73,8 @@ export function buildAxolotlRows(
         prompt: flattenMessagesText(ex.messages, ctx, { context: 'prompt' }),
         answer: ex.answer ?? '',
       }));
+    case 'pretrain':
+      return buildTextRows(examples);
   }
 }
 
@@ -103,6 +108,8 @@ function datasetEntry(type: DatasetType, trainPath: string): Record<string, unkn
         type: 'user_defined.default',
         field_prompt: 'prompt',
       };
+    case 'pretrain':
+      return { path: trainPath, type: 'completion', field: 'text' };
   }
 }
 
@@ -151,6 +158,8 @@ export function buildAxolotlConfig(ctx: RenderContext, dataFiles: SplitFileMap):
   if (type === 'sft') {
     config['chat_template'] = 'tokenizer_default';
     config['sample_packing'] = true;
+  } else if (type === 'pretrain') {
+    config['sample_packing'] = true;
   } else if (type === 'preference') {
     config['rl'] = 'dpo';
   } else if (type === 'kto') {
@@ -165,7 +174,10 @@ export function buildAxolotlConfig(ctx: RenderContext, dataFiles: SplitFileMap):
       { path: validationPath, split: 'train', type: 'chat_template', field_messages: 'messages' },
     ];
     config['val_set_size'] = 0;
-  } else if (type === 'sft') {
+  } else if (validationPath !== undefined && type === 'pretrain') {
+    config['test_datasets'] = [{ path: validationPath, type: 'completion', field: 'text' }];
+    config['val_set_size'] = 0;
+  } else if (type === 'sft' || type === 'pretrain') {
     config['val_set_size'] = 0.05;
   }
 

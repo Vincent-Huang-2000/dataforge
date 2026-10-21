@@ -98,7 +98,7 @@ function preferenceRow(ex: Example, ctx: RenderContext): Record<string, unknown>
  * Dataset rows for the OpenAI fine-tuning API (one JSONL line per example).
  *
  * Supports `sft` (supervised chat format) and `preference` (DPO format);
- * `kto` and `rl` throw {@link UnsupportedExportError}.
+ * `kto`, `rl` and `pretrain` throw {@link UnsupportedExportError}.
  */
 export function buildOpenAiFtRows(
   examples: Example[],
@@ -112,6 +112,7 @@ export function buildOpenAiFtRows(
       return examples.map((ex) => preferenceRow(ex, ctx));
     case 'kto':
     case 'rl':
+    case 'pretrain':
       throw new UnsupportedExportError('openai-ft', type);
   }
 }

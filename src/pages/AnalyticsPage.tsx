@@ -58,6 +58,7 @@ const TYPE_BAR: Record<DatasetType, string> = {
   preference: 'bg-ember-500',
   kto: 'bg-warn',
   rl: 'bg-ok',
+  pretrain: 'bg-ink-dim',
 };
 
 interface PageStats {
@@ -97,7 +98,13 @@ export function AnalyticsPage() {
 
   const stats = useMemo<PageStats>(() => {
     const rows = data?.rows ?? [];
-    const byType: Record<DatasetType, number> = { sft: 0, preference: 0, kto: 0, rl: 0 };
+    const byType: Record<DatasetType, number> = {
+      sft: 0,
+      preference: 0,
+      kto: 0,
+      rl: 0,
+      pretrain: 0,
+    };
     const bySplit: Record<SplitName, number> = { train: 0, validation: 0, test: 0 };
     const roleCounts: Record<string, number> = {};
     const histogram: HistogramBucket[] = TOKEN_BUCKETS.map((b) => ({
@@ -109,6 +116,7 @@ export function AnalyticsPage() {
     let totalTokens = 0;
     let tokenized = 0;
     let totalMessages = 0;
+    let conversations = 0;
     let scored = 0;
     let scoreSum = 0;
     let withReasoning = 0;
@@ -119,9 +127,15 @@ export function AnalyticsPage() {
     for (const e of rows) {
       byType[e.type] += 1;
       bySplit[e.split] += 1;
-      totalMessages += e.messages.length;
       if (e.reviewed) reviewed += 1;
       if (e.flagged) flagged += 1;
+      // Pretrain rows are raw text stored as one assistant message — keep them
+      // out of the turn and role statistics.
+      const conversational = e.type !== 'pretrain';
+      if (conversational) {
+        conversations += 1;
+        totalMessages += e.messages.length;
+      }
 
       let hasReasoning = false;
       let hasToolCalls = false;
@@ -133,10 +147,12 @@ export function AnalyticsPage() {
           if (m.toolCalls && m.toolCalls.length > 0) hasToolCalls = true;
         }
       };
-      scan(e.messages);
-      scan(e.chosen);
-      scan(e.rejected);
-      scan(e.completion);
+      if (conversational) {
+        scan(e.messages);
+        scan(e.chosen);
+        scan(e.rejected);
+        scan(e.completion);
+      }
       if (hasReasoning) withReasoning += 1;
       if (hasToolCalls) withToolCalls += 1;
 
@@ -169,7 +185,7 @@ export function AnalyticsPage() {
       totalTokens,
       tokenized,
       untokenized: rows.length - tokenized,
-      avgTurns: rows.length ? totalMessages / rows.length : 0,
+      avgTurns: conversations ? totalMessages / conversations : 0,
       totalMessages,
       scored,
       avgScore: scored ? scoreSum / scored : null,

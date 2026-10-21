@@ -51,7 +51,7 @@
 | 项目区 | 页面内 Projects section | 已有项目时显示标题、创建/演示项目操作和项目卡片网格。 |
 | 首项目空状态 | `EmptyState` | 没有项目时，引导“创建项目”或“加载演示项目”。 |
 | 项目卡片 | `ProjectCard` | 一个项目的入口；点击进入其数据页。卡片菜单支持重命名和删除。 |
-| 新建项目对话框 | `NewProjectDialog` | 填写项目名称、描述、数据集类型及可选目标模型；创建后进入该项目的导入页。 |
+| 新建项目对话框 | `NewProjectDialog` | 填写项目名称、描述、数据集类型（SFT / DPO / KTO / RL / PT）及可选目标模型；创建后进入该项目的导入页。 |
 
 ### 2.2 设置页（`SettingsPage`）
 
@@ -86,6 +86,7 @@
 | 偏好编辑器 | `PreferenceEditor` | preference（DPO/ORPO）样本：共享 prompt 与并排的 chosen / rejected 回复，可交换两者。 |
 | KTO 编辑器 | `KtoEditor` | KTO 样本：prompt、completion，以及 desirable / undesirable 标签。 |
 | RL 编辑器 | `RlEditor` | RL（GRPO / RLVR）样本：prompt 与供奖励函数核对的可验证答案。 |
+| 预训练文本编辑器 | `PretrainEditor` | Pretrain（PT，继续预训练）样本：单个原始文本框与字符数，无角色与消息卡片。数据表格对这类样本只显示一段正文摘要。 |
 
 ### 3.2 导入页（`ImportPage`）
 
@@ -96,8 +97,8 @@
 | 文件标签页 | `FileDrop` | 拖放或选择文件，显示每个文件的解析、格式识别和转换进度。支持 JSONL、JSON、CSV/TSV、Parquet、Excel、PDF、DOCX、Markdown、文本等。文档文件会交给文档标签页。 |
 | 粘贴标签页 | `PasteImport` | 粘贴 JSONL、JSON 或 CSV 文本后解析、识别并转换。 |
 | Hugging Face 标签页 | `HfImport` | 搜索或填写 Hub 数据集 ID/URL，选择配置和 split，预览原始行并导入。 |
-| 文档标签页 | `DocumentImport` | 将非结构化文档文本直接提取 Q&A，或调用模型按分块生成训练样本。 |
-| 导入预览 | `ImportPreview` | 导入转换后的统一确认界面：显示识别结果、警告、跳过/错误、样本预览；确认后才写入项目。 |
+| 文档标签页 | `DocumentImport` | 将非结构化文档文本直接提取 Q&A、按无重叠分块原样保存为预训练文本（“Import as pretraining text”），或调用模型按分块生成训练样本。 |
+| 导入预览 | `ImportPreview` | 导入转换后的统一确认界面：显示识别结果、警告、跳过/错误、样本预览（Content 列显示首条 user 轮或预训练正文）；确认后才写入项目。 |
 
 ### 3.3 生成页（`GeneratePage`）
 
@@ -110,7 +111,7 @@
 | 增强面板 | `EnhanceSection` | 对既有样本进行质量提升、补充 reasoning、扩写、简化、自定义改写等原地增强。 |
 | 偏好对生成面板 | `PreferenceSection` | 从 SFT 样本生成候选并排序，创建 chosen / rejected 偏好对。 |
 | LLM 评分面板 | `JudgeSection` | 按有用性、正确性和清晰度评估现有样本，写入 0–100 的质量分。 |
-| 目标选择器 | `TargetPicker` | AI 操作的对象范围：数据表格当前选中项、项目全部样本或随机样本；可按数据类型限制。 |
+| 目标选择器 | `TargetPicker` | AI 操作的对象范围：数据表格当前选中项、项目全部样本或随机样本；可按数据类型限制。Pretrain 样本始终不可选，项目中存在时显示提示。 |
 | 作业进度 | `JobProgress` | 某个批处理作业的行内进度、完成/失败数、详情与取消操作。 |
 
 ### 3.4 质量页（`QualityPage`）
@@ -131,7 +132,7 @@
 | 名称 | 组件 | 用途 |
 |---|---|---|
 | 统计卡片行 | `StatCard` × 4 | 显示样本数、总 token、平均轮数、已评分比例；token 未计算时这里提供计算操作。 |
-| 构成区 | `BarList` | 三个横向条形列表：按数据集类型、数据切分和消息角色统计。 |
+| 构成区 | `BarList` | 三个横向条形列表：按数据集类型、数据切分和消息角色统计（角色与平均轮数不计入 Pretrain 样本）。 |
 | Token 分布图 | `Histogram` | 按 token 区间显示竖向柱状分布。 |
 | 覆盖率区 | 页面内 Coverage section | 显示 reasoning、工具调用、已审阅、已标记、已评分样本所占比例。 |
 | 质量分布区 | `BarList` | 已有评分时，按质量分区间展示分布。 |
@@ -143,7 +144,7 @@
 
 | 名称 | 组件 | 用途 |
 |---|---|---|
-| 框架选择网格 | `FrameworkCard` 列表 | 选择 JSONL、Axolotl、TRL、LLaMA-Factory、MS-SWIFT、Unsloth 或 OpenAI FT 等目标格式；不支持当前数据类型的卡片会禁用。 |
+| 框架选择网格 | `FrameworkCard` 列表 | 选择 JSONL、Axolotl、TRL、LLaMA-Factory、MS-SWIFT、Unsloth 或 OpenAI FT 等目标格式；不支持当前数据类型的卡片会禁用（如 Pretrain 下的 OpenAI FT、Alpaca、ShareGPT）。 |
 | 导出选项面板 | `ExportOptionsPanel` | 选择目标模型、自动分配 train/validation/test、是否拆分文件、是否包含 system / reasoning、以及先前 thinking 的处理方式。 |
 | 导出预览 | `ExportPreview` | 使用首批样本实时生成结果，按输出文件分标签展示，便于导出前检查。 |
 | 下载操作栏 | 页面内 Download section | 汇总将导出的样本、跳过的其他类型样本和 token 估计，并下载 ZIP。 |

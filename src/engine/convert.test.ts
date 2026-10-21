@@ -594,14 +594,43 @@ describe('rowsToExamples — rl', () => {
 // ---------------------------------------------------------------------------
 
 describe('rowsToExamples — text and unknown', () => {
-  it('converts plain string rows and single-field rows to user messages', () => {
+  it('converts plain string rows and single-field rows to pretrain examples', () => {
     const { examples } = importRows(['raw line one', 'raw line two']);
     expect(examples).toHaveLength(2);
-    expect(examples[0].messages).toEqual([{ role: 'user', content: 'raw line one' }]);
+    expect(examples[0].type).toBe('pretrain');
+    expect(examples[0].messages).toEqual([{ role: 'assistant', content: 'raw line one' }]);
     expect(examples[0].meta['sourceFormat']).toBe('text');
 
     const fromObjects = importRows([{ text: 'document body' }]);
-    expect(fromObjects.examples[0].messages).toEqual([{ role: 'user', content: 'document body' }]);
+    expect(fromObjects.examples[0].type).toBe('pretrain');
+    expect(fromObjects.examples[0].messages).toEqual([
+      { role: 'assistant', content: 'document body' },
+    ]);
+  });
+
+  it('converts multi-column pretraining rows using the text field', () => {
+    const { examples, skipped } = importRows([
+      { id: 'a1', url: 'https://example.com/1', text: 'first document' },
+      { id: 'a2', url: 'https://example.com/2', text: 'second document' },
+    ]);
+    expect(skipped).toBe(0);
+    expect(examples.map((e) => e.type)).toEqual(['pretrain', 'pretrain']);
+    expect(examples[1].messages).toEqual([{ role: 'assistant', content: 'second document' }]);
+  });
+
+  it('imports a lone plain assistant message (MS-SWIFT pretrain shape) as pretrain', () => {
+    const { examples } = importRows([
+      { messages: [{ role: 'assistant', content: 'corpus text' }] },
+    ]);
+    expect(examples[0].type).toBe('pretrain');
+    expect(examples[0].messages).toEqual([{ role: 'assistant', content: 'corpus text' }]);
+  });
+
+  it('keeps a lone assistant message with reasoning as sft', () => {
+    const { examples } = importRows([
+      { messages: [{ role: 'assistant', content: 'answer', reasoning: 'why' }] },
+    ]);
+    expect(examples[0].type).toBe('sft');
   });
 
   it('classifies rows individually under an unknown schema', () => {

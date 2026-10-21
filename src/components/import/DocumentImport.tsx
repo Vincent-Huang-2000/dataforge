@@ -2,13 +2,14 @@
  * Document tab — turn unstructured text into training examples.
  *
  * Receives text/title from the File tab (PDF/DOCX/MD/TXT uploads) or via its
- * own paste box. Existing Q&A structure can be imported directly; otherwise
- * an LLM generates grounded examples per chunk as a cancellable batch job.
+ * own paste box. Existing Q&A structure can be imported directly, the text can
+ * be kept verbatim as pretrain chunks, or an LLM generates grounded examples
+ * per chunk as a cancellable batch job.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CheckCircle2, FileQuestion, Sparkles } from 'lucide-react';
+import { CheckCircle2, FileQuestion, FileText, Sparkles } from 'lucide-react';
 import type { ImportResult } from '@/engine/types';
 import { chunkText, extractQAPairs, parseTextDocument } from '@/engine/importers/textdoc';
 import { generateFromDocument, type DocGenStyle } from '@/lib/ai/docgen';
@@ -60,7 +61,8 @@ export function DocumentImport({
   const [style, setStyle] = useState<DocGenStyle>('qa');
   const [selection, setSelection] = useState<ProviderSelection | null>(null);
   const [pairsBusy, setPairsBusy] = useState(false);
-  const [pairsResult, setPairsResult] = useState<ImportResult | null>(null);
+  const [pretrainBusy, setPretrainBusy] = useState(false);
+  const [previewResult, setPreviewResult] = useState<ImportResult | null>(null);
   const [handle, setHandle] = useState<BatchHandle | null>(null);
   const [lastRun, setLastRun] = useState<RunSummary | null>(null);
 
@@ -69,12 +71,17 @@ export function DocumentImport({
     if (!doc) return;
     setText(doc.text);
     setTitle(doc.title);
-    setPairsResult(null);
+    setPreviewResult(null);
     setLastRun(null);
   }, [doc]);
 
   const normalized = useMemo(() => parseTextDocument(text), [text]);
   const chunks = useMemo(() => (normalized ? chunkText(normalized) : []), [normalized]);
+  // Pretraining chunks never overlap: overlapping text would train twice.
+  const pretrainChunks = useMemo(
+    () => (normalized ? chunkText(normalized, { overlap: 0 }) : []),
+    [normalized],
+  );
   const qaPairs = useMemo(() => (normalized ? extractQAPairs(normalized) : []), [normalized]);
 
   const activeJobs = useActiveJobs(projectId);
@@ -89,11 +96,31 @@ export function DocumentImport({
     try {
       const api = getEngineWorker();
       const schema = await api.detect(qaPairs);
-      setPairsResult(await api.convert(qaPairs, schema, projectId));
+      setPreviewResult(await api.convert(qaPairs, schema, projectId));
     } catch (err) {
       toast.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setPairsBusy(false);
+    }
+  }
+
+  /** Store the document verbatim as raw-text pretrain examples, one per chunk. */
+  async function handleImportPretrain() {
+    if (pretrainBusy || pretrainChunks.length === 0) return;
+    setPretrainBusy(true);
+    try {
+      const api = getEngineWorker();
+      const schema = await api.detect(pretrainChunks);
+      const result = await api.convert(pretrainChunks, schema, projectId);
+      const docTitle = title.trim() || 'Untitled document';
+      result.examples.forEach((example, index) => {
+        example.meta = { ...example.meta, docTitle, chunkIndex: index };
+      });
+      setPreviewResult(result);
+    } catch (err) {
+      toast.error(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setPretrainBusy(false);
     }
   }
 
@@ -151,7 +178,7 @@ export function DocumentImport({
           value={text}
           onChange={(e) => {
             setText(e.target.value);
-            setPairsResult(null);
+            setPreviewResult(null);
           }}
           placeholder="Paste document text here, or drop a PDF, DOCX, MD or TXT file on the File tab."
           className="h-48 font-mono text-[13px] leading-relaxed"
@@ -183,7 +210,30 @@ export function DocumentImport({
         </div>
       )}
 
-      {pairsResult && <ImportPreview result={pairsResult} onDiscard={() => setPairsResult(null)} />}
+      {pretrainChunks.length > 0 && (
+        <div className="panel flex items-center gap-2.5 px-3 py-2">
+          <FileText className="text-ink-dim size-4 shrink-0" aria-hidden />
+          <span className="text-ink text-[13px]">
+            Keep the text verbatim as{' '}
+            <span className="font-mono tabular-nums">{fmtNum(pretrainChunks.length)}</span>{' '}
+            pretraining {pretrainChunks.length === 1 ? 'chunk' : 'chunks'} (no overlap).
+          </span>
+          <Button
+            variant="outline"
+            size="xs"
+            className="ml-auto shrink-0"
+            onClick={handleImportPretrain}
+            disabled={pretrainBusy || running}
+          >
+            {pretrainBusy && <Spinner className="size-3.5" />}
+            Import as pretraining text
+          </Button>
+        </div>
+      )}
+
+      {previewResult && (
+        <ImportPreview result={previewResult} onDiscard={() => setPreviewResult(null)} />
+      )}
 
       <section className="panel" aria-label="Generate examples with AI">
         <div className="panel-header">

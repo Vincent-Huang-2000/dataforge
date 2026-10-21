@@ -5,7 +5,8 @@
  * style `train.py`: `FastLanguageModel.from_pretrained(..., load_in_4bit=True)`,
  * `get_peft_model` LoRA, chat-template application and the trainer matching
  * the dataset type (SFTTrainer, DPOTrainer for preference, KTOTrainer /
- * GRPOTrainer for KTO / RL).
+ * GRPOTrainer for KTO / RL, UnslothTrainer continued pretraining for
+ * pretrain — embeddings + LM head adapted, EOS appended per document).
  *
  * Runtime-environment agnostic: no DOM, no React.
  */
@@ -30,17 +31,34 @@ export function buildUnslothRows(
 }
 
 /** Python list literal of the LoRA target modules. */
-function pyTargetModules(): string {
-  return `[${LORA_TARGET_MODULES.map((m) => `"${m}"`).join(', ')}]`;
+function pyTargetModules(modules: string[] = LORA_TARGET_MODULES): string {
+  return `[${modules.map((m) => `"${m}"`).join(', ')}]`;
 }
 
+/**
+ * Continued-pretraining LoRA targets: the attention+MLP projections plus the
+ * embeddings and LM head, so the adapter can absorb new-domain vocabulary
+ * (Unsloth's continued-pretraining recipe).
+ */
+export const PRETRAIN_TARGET_MODULES: string[] = [
+  ...LORA_TARGET_MODULES,
+  'embed_tokens',
+  'lm_head',
+];
+
 /** Trainer-specific sections of the Unsloth script. */
-function trainerSection(ctx: RenderContext): { imports: string; body: string } {
+function trainerSection(ctx: RenderContext): {
+  imports: string;
+  body: string;
+  targetModules?: string[];
+} {
+  // Continued pretraining wants a gentler rate than instruction tuning.
+  const learningRate = ctx.options.datasetType === 'pretrain' ? '5e-5' : '2e-4';
   const configArgs = [
     'per_device_train_batch_size=2',
     'gradient_accumulation_steps=4',
     'num_train_epochs=3',
-    'learning_rate=2e-4',
+    `learning_rate=${learningRate}`,
     'lr_scheduler_type="cosine"',
     'warmup_ratio=0.1',
     'logging_steps=10',
@@ -120,6 +138,35 @@ ${argLines(['max_completion_length=MAX_SEQ_LENGTH'])}
     ),
 )`,
       };
+    case 'pretrain':
+      return {
+        imports: 'from unsloth import UnslothTrainer, UnslothTrainingArguments',
+        targetModules: PRETRAIN_TARGET_MODULES,
+        body: `
+EOS_TOKEN = tokenizer.eos_token
+
+
+def add_eos(batch):
+    # Mark document boundaries so packed sequences do not run together.
+    return {"text": [text + EOS_TOKEN for text in batch["text"]]}
+
+
+dataset = dataset.map(add_eos, batched=True)
+
+trainer = UnslothTrainer(
+    model=model,
+    processing_class=tokenizer,
+    train_dataset=dataset,
+    args=UnslothTrainingArguments(
+${argLines([
+  'dataset_text_field="text"',
+  'max_length=MAX_SEQ_LENGTH',
+  'packing=True',
+  'embedding_learning_rate=5e-6',
+])}
+    ),
+)`,
+      };
   }
 }
 
@@ -161,7 +208,7 @@ model = FastLanguageModel.get_peft_model(
     r=32,
     lora_alpha=64,
     lora_dropout=0.05,
-    target_modules=${pyTargetModules()},
+    target_modules=${pyTargetModules(section.targetModules)},
     bias="none",
     use_gradient_checkpointing="unsloth",
     random_state=42,

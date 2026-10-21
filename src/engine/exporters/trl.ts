@@ -3,13 +3,15 @@
  *
  * Emits column-typed JSONL per the TRL 1.5 dataset taxonomy plus a `train.py`
  * driving the matching trainer (SFTTrainer / DPOTrainer / KTOTrainer /
- * GRPOTrainer) with a peft LoRA config and `load_dataset("json", …)`.
+ * GRPOTrainer; SFTTrainer over raw text for pretrain) with a peft LoRA config
+ * and `load_dataset("json", …)`.
  *
  * Runtime-environment agnostic: no DOM, no React.
  */
 
 import type { DatasetType, Example } from '@/engine/types';
 import {
+  buildTextRows,
   renderMessages,
   renderToolDefinitions,
   type RenderContext,
@@ -26,6 +28,7 @@ const MODEL_PLACEHOLDER = 'REPLACE_WITH_BASE_MODEL';
  * - preference → { prompt: msgs, chosen: msgs, rejected: msgs }
  * - kto        → { prompt: msgs, completion: msgs, label }   (unpaired)
  * - rl         → { prompt: msgs, answer }                    (GRPO / RLVR)
+ * - pretrain   → { text }                                    (language modeling)
  */
 export function buildTrlRows(examples: Example[], ctx: RenderContext): Record<string, unknown>[] {
   switch (ctx.options.datasetType) {
@@ -53,6 +56,8 @@ export function buildTrlRows(examples: Example[], ctx: RenderContext): Record<st
         prompt: renderMessages(ex.messages, ctx, { context: 'prompt' }),
         answer: ex.answer ?? '',
       }));
+    case 'pretrain':
+      return buildTextRows(examples);
   }
 }
 
@@ -128,6 +133,16 @@ def reward_exact_answer(completions, answer, **kwargs):
     return rewards
 
 `,
+      };
+    case 'pretrain':
+      // Language-modeling dataset: SFTTrainer trains on the raw `text` column.
+      return {
+        trainerImport: 'from trl import SFTConfig, SFTTrainer',
+        configClass: 'SFTConfig',
+        trainerClass: 'SFTTrainer',
+        extraConfigArgs: ['dataset_text_field="text"', 'max_length=MAX_LENGTH', 'packing=True'],
+        extraTrainerArgs: [],
+        preamble: '',
       };
   }
 }

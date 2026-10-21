@@ -12,6 +12,8 @@ import {
   type ModelInfo,
 } from '@/engine/types';
 import { getModel } from '@/engine/registry';
+import { detectFormat } from '@/engine/detection';
+import { rowsToExamples } from '@/engine/convert';
 import {
   buildExportBundle,
   bundleToZip,
@@ -144,6 +146,19 @@ function rlExamples(): Example[] {
   ];
 }
 
+const PRETRAIN_TEXT = 'Paris is the capital of France.\n\nIt sits on the Seine.';
+
+function pretrainExamples(): Example[] {
+  return [
+    createExample({
+      projectId: PROJECT,
+      type: 'pretrain',
+      split: 'train',
+      messages: [{ role: 'assistant', content: PRETRAIN_TEXT }],
+    }),
+  ];
+}
+
 function examplesFor(type: DatasetType): Example[] {
   switch (type) {
     case 'sft':
@@ -154,6 +169,8 @@ function examplesFor(type: DatasetType): Example[] {
       return ktoExamples();
     case 'rl':
       return rlExamples();
+    case 'pretrain':
+      return pretrainExamples();
   }
 }
 
@@ -190,12 +207,12 @@ function rows(bundle: ExportBundle, path = 'data/train.jsonl'): Row[] {
 // ---------------------------------------------------------------------------
 
 const SUPPORTED: [FrameworkId, DatasetType[]][] = [
-  ['jsonl', ['sft', 'preference', 'kto', 'rl']],
-  ['axolotl', ['sft', 'preference', 'kto', 'rl']],
-  ['trl', ['sft', 'preference', 'kto', 'rl']],
-  ['llama-factory', ['sft', 'preference', 'kto']],
-  ['ms-swift', ['sft', 'preference', 'kto', 'rl']],
-  ['unsloth', ['sft', 'preference', 'kto', 'rl']],
+  ['jsonl', ['sft', 'preference', 'kto', 'rl', 'pretrain']],
+  ['axolotl', ['sft', 'preference', 'kto', 'rl', 'pretrain']],
+  ['trl', ['sft', 'preference', 'kto', 'rl', 'pretrain']],
+  ['llama-factory', ['sft', 'preference', 'kto', 'pretrain']],
+  ['ms-swift', ['sft', 'preference', 'kto', 'rl', 'pretrain']],
+  ['unsloth', ['sft', 'preference', 'kto', 'rl', 'pretrain']],
   ['openai-ft', ['sft', 'preference']],
   ['alpaca', ['sft', 'preference']],
   ['sharegpt', ['sft']],
@@ -746,6 +763,84 @@ describe('legacy alpaca / sharegpt', () => {
     const row = rows(bundleFor('sharegpt', 'sft'))[0]!;
     const speakers = row['conversations'].map((t: Row) => t['from']);
     expect(speakers).toEqual(['system', 'human', 'gpt']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pretrain (raw text)
+// ---------------------------------------------------------------------------
+
+describe('pretrain', () => {
+  it('emits raw {text} rows for jsonl / axolotl / trl / llama-factory / unsloth', () => {
+    for (const framework of ['jsonl', 'axolotl', 'trl', 'llama-factory', 'unsloth'] as const) {
+      expect(rows(bundleFor(framework, 'pretrain'))).toEqual([{ text: PRETRAIN_TEXT }]);
+    }
+  });
+
+  it('emits a lone assistant message for ms-swift and a swift pt command', () => {
+    expect(rows(bundleFor('ms-swift', 'pretrain'))).toEqual([
+      { messages: [{ role: 'assistant', content: PRETRAIN_TEXT }] },
+    ]);
+    expect(fileContent(bundleFor('ms-swift', 'pretrain'), 'README.md')).toContain('swift pt');
+  });
+
+  it('round-trips canonical JSONL and ms-swift rows back to pretrain examples', () => {
+    for (const framework of ['jsonl', 'ms-swift'] as const) {
+      const data = rows(bundleFor(framework, 'pretrain'));
+      const result = rowsToExamples(data, detectFormat(data), PROJECT);
+      expect(result.skipped).toBe(0);
+      expect(result.examples[0]!.type).toBe('pretrain');
+      expect(result.examples[0]!.messages).toEqual([{ role: 'assistant', content: PRETRAIN_TEXT }]);
+    }
+  });
+
+  it('configures axolotl for completion-style pretraining with packing', () => {
+    const config = parseYaml(fileContent(bundleFor('axolotl', 'pretrain'), 'axolotl.yaml')) as Row;
+    expect(config['datasets'][0]).toMatchObject({ type: 'completion', field: 'text' });
+    expect(config['sample_packing']).toBe(true);
+    expect(config['rl']).toBeUndefined();
+    expect(config['chat_template']).toBeUndefined();
+
+    const split = parseYaml(
+      fileContent(bundleFor('axolotl', 'pretrain', { splitFiles: true }), 'axolotl.yaml'),
+    ) as Row;
+    expect(split['test_datasets']).toBeUndefined(); // fixture has no validation rows
+  });
+
+  it('runs TRL SFTTrainer over the text column', () => {
+    const script = fileContent(bundleFor('trl', 'pretrain'), 'train.py');
+    expect(script).toContain('SFTTrainer');
+    expect(script).toContain('dataset_text_field="text"');
+    expect(script).toContain('packing=True');
+  });
+
+  it('uses stage pt and an alpaca prompt column for llama-factory', () => {
+    const bundle = bundleFor('llama-factory', 'pretrain');
+    const info = JSON.parse(fileContent(bundle, 'dataset_info.json')) as Row;
+    const entry = Object.values(info)[0] as Row;
+    expect(entry['columns']).toEqual({ prompt: 'text' });
+    expect(entry['formatting']).toBeUndefined();
+    const config = parseYaml(fileContent(bundle, 'llamafactory.yaml')) as Row;
+    expect(config['stage']).toBe('pt');
+  });
+
+  it('generates an Unsloth continued-pretraining script', () => {
+    const script = fileContent(bundleFor('unsloth', 'pretrain'), 'train.py');
+    expect(script).toContain('UnslothTrainer');
+    expect(script).toContain('embedding_learning_rate=5e-6');
+    expect(script).toContain('learning_rate=5e-5');
+    expect(script).toContain('"embed_tokens", "lm_head"');
+    expect(script).toContain('EOS_TOKEN');
+    // Other dataset types keep the plain projection targets.
+    expect(fileContent(bundleFor('unsloth', 'sft'), 'train.py')).not.toContain('embed_tokens');
+  });
+
+  it('describes raw text in the README without reasoning / system lines', () => {
+    const readme = fileContent(bundleFor('jsonl', 'pretrain'), 'README.md');
+    expect(readme).toContain('raw text (continued pretraining)');
+    expect(readme).toContain('{"text": …}');
+    expect(readme).not.toContain('**Reasoning traces:**');
+    expect(readme).not.toContain('**System turns:**');
   });
 });
 

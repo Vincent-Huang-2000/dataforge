@@ -71,6 +71,8 @@ describe('classifyRow', () => {
     expect(classifyRow(ktoRow())).toBe('kto-unpaired');
     expect(classifyRow({ text: 'raw line' })).toBe('text');
     expect(classifyRow('a plain string row')).toBe('text');
+    expect(classifyRow({ id: 1, text: 'doc', source: 'web' })).toBe('text');
+    expect(classifyRow({ id: 1, title: 'no body field' })).toBeNull();
   });
 
   it('prefers dpo-pairs over openai-messages when chosen/rejected are present', () => {
@@ -212,7 +214,19 @@ describe('detectFormat', () => {
   it('detects single-string-field rows as text', () => {
     const schema = detectFormat(repeat(() => ({ text: 'a raw line' }), 4));
     expect(schema.format).toBe('text');
-    expect(schema.fieldMapping).toEqual({ text: 'messages' });
+    expect(schema.fieldMapping).toEqual({ text: 'text' });
+  });
+
+  it('detects multi-column pretraining rows by their text field', () => {
+    const schema = detectFormat(
+      repeat(() => ({ id: 7, url: 'https://example.com', text: 'body', meta: { lang: 'en' } }), 4),
+    );
+    expect(schema.format).toBe('text');
+    expect(schema.fieldMapping).toEqual({ text: 'text' });
+
+    const content = detectFormat(repeat(() => ({ id: 'x', content: 'body' }), 4));
+    expect(content.format).toBe('text');
+    expect(content.fieldMapping).toEqual({ content: 'text' });
   });
 
   it('detects plain string rows as text', () => {
