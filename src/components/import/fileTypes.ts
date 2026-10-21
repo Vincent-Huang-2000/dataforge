@@ -4,7 +4,7 @@
  */
 import type { ImportPhase } from '@/lib/workerClient';
 
-/** Extensions the engine importers accept (rows files and documents). */
+/** Extensions the engine importers accept (rows files, documents, ZIP archives). */
 export const ACCEPT_EXTENSIONS = [
   '.jsonl',
   '.ndjson',
@@ -18,6 +18,7 @@ export const ACCEPT_EXTENSIONS = [
   '.docx',
   '.md',
   '.txt',
+  '.zip',
 ] as const;
 
 export const PHASE_LABELS: Record<ImportPhase, string> = {

@@ -22,6 +22,7 @@ import type {
   ImportResult,
   ModelInfo,
   QualityReport,
+  SplitName,
 } from '@/engine/types';
 import type { ParsedFile, ParseFileInput } from '@/engine/importers';
 import type {
@@ -75,8 +76,16 @@ export interface EngineWorkerApi {
   parseFile(input: ParseFileInput): Promise<ParsedFile>;
   /** Detects the source schema of tabular rows. */
   detect(rows: unknown[]): DetectedSchema;
-  /** Converts rows into canonical Examples for `projectId`. */
-  convert(rows: unknown[], schema: DetectedSchema, projectId: string): ImportResult;
+  /**
+   * Converts rows into canonical Examples for `projectId`. `splits`, when
+   * given, is index-aligned with `rows` and sets each example's split.
+   */
+  convert(
+    rows: unknown[],
+    schema: DetectedSchema,
+    projectId: string,
+    splits?: SplitName[],
+  ): ImportResult;
   /** Scores a single example; model-aware when `opts.targetModel` is given. */
   analyzeExample(example: Example, opts?: { targetModel?: ModelInfo }): QualityReport;
   /**
@@ -165,7 +174,8 @@ export function mergeParseErrors(result: ImportResult, parseErrors?: string[]): 
  * ArrayBuffer is transferred (zero-copy) to the worker.
  *
  * Documents (PDF/DOCX/MD/TXT) short-circuit after parsing and are returned
- * as raw text for the document-to-dataset flow.
+ * as raw text for the document-to-dataset flow. ZIP archives (e.g. export
+ * bundles) convert every dataset file inside, keeping each file's split.
  *
  * @param file      - The uploaded file.
  * @param projectId - Project the converted examples will belong to.
@@ -190,7 +200,7 @@ export async function importFileToProject(
   const schema = await api.detect(parsed.rows);
 
   onPhase?.('converting');
-  const result = await api.convert(parsed.rows, schema, projectId);
+  const result = await api.convert(parsed.rows, schema, projectId, parsed.splits);
   return { kind: 'rows', result: mergeParseErrors(result, parsed.errors) };
 }
 
