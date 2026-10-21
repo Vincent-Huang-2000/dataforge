@@ -11,6 +11,7 @@ const TYPE_WORD: Record<DatasetType, string> = {
   preference: 'preference',
   kto: 'KTO',
   rl: 'RL',
+  pretrain: 'pretrain',
 };
 
 /** Keep the preview DOM bounded even if a sample example is enormous. */

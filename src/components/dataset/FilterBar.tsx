@@ -90,6 +90,7 @@ export function FilterBar({
           <SelectItem value="preference">DPO</SelectItem>
           <SelectItem value="kto">KTO</SelectItem>
           <SelectItem value="rl">RL</SelectItem>
+          <SelectItem value="pretrain">PT</SelectItem>
         </SelectContent>
       </Select>
 

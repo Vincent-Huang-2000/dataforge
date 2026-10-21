@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Check, Flag, Inbox } from 'lucide-react';
 import type { Example, SplitName } from '@/engine/types';
+import { pretrainText } from '@/engine/types';
 import type { FilteredDataset } from '@/lib/hooks';
 import { useUiStore } from '@/lib/store';
 import { cn, fmtNum, fmtRelativeTime } from '@/lib/utils';
@@ -38,6 +39,8 @@ function clip(text: string): string {
 }
 
 function buildPreview(e: Example): { user: string; assistant: string | null } {
+  // Pretrain is one raw-text body, not a user/assistant exchange.
+  if (e.type === 'pretrain') return { user: clip(pretrainText(e)), assistant: null };
   const userMsg = e.messages.find((m) => m.role === 'user') ?? e.messages[0];
   const assistantMsg =
     e.messages.find((m) => m.role === 'assistant') ??

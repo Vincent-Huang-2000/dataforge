@@ -12,7 +12,8 @@
  *   - "Random sample"     N ids drawn uniformly, default 50
  *
  * An optional `typeFilter` restricts every mode (counts and resolution) to one
- * dataset type, e.g. "sft" for preference-pair building. `resolve()` queries
+ * dataset type, e.g. "sft" for preference-pair building; without it every
+ * conversational type is eligible (pretrain raw text never is). `resolve()` queries
  * Dexie at call time, so the returned ids are always fresh even if the grid
  * changed after mounting.
  */
@@ -27,6 +28,7 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { DatasetType } from '@/engine/types';
+import { DATASET_TYPES } from '@/engine/types';
 import { db } from '@/lib/db';
 import { useUiStore } from '@/lib/store';
 import { cn, fmtNum } from '@/lib/utils';
@@ -51,6 +53,12 @@ interface TargetPickerProps {
 
 const DEFAULT_SAMPLE_SIZE = 50;
 
+/**
+ * Every AI operation (enhance, judge, synthetic seeds, preference building)
+ * works on conversations — raw-text pretrain examples are never eligible.
+ */
+const AI_ELIGIBLE_TYPES = DATASET_TYPES.filter((type) => type !== 'pretrain');
+
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -73,13 +81,18 @@ export const TargetPicker = forwardRef<TargetPickerHandle, TargetPickerProps>(fu
   const [sampleSize, setSampleSize] = useState(String(DEFAULT_SAMPLE_SIZE));
 
   const fetchPoolIds = useCallback(async (): Promise<string[]> => {
-    const collection = typeFilter
-      ? db.examples.where('[projectId+type]').equals([projectId, typeFilter])
-      : db.examples.where('projectId').equals(projectId);
+    const types = typeFilter !== undefined ? [typeFilter] : AI_ELIGIBLE_TYPES;
+    const collection = db.examples
+      .where('[projectId+type]')
+      .anyOf(types.map((type) => [projectId, type]));
     return (await collection.primaryKeys()) as string[];
   }, [projectId, typeFilter]);
 
   const poolIds = useLiveQuery(() => fetchPoolIds(), [fetchPoolIds]);
+  const pretrainCount = useLiveQuery(
+    () => db.examples.where('[projectId+type]').equals([projectId, 'pretrain']).count(),
+    [projectId],
+  );
 
   /** Grid selection narrowed to this project and (optionally) one type. */
   const selectedCount = useMemo(() => {
@@ -188,10 +201,16 @@ export const TargetPicker = forwardRef<TargetPickerHandle, TargetPickerProps>(fu
           </span>
         </div>
       </div>
-      {typeFilter !== undefined && (
+      {typeFilter !== undefined ? (
         <p className="text-ink-faint mt-1 text-xs">
           Only {typeFilter.toUpperCase()} examples are eligible.
         </p>
+      ) : (
+        (pretrainCount ?? 0) > 0 && (
+          <p className="text-ink-faint mt-1 text-xs">
+            Pretrain (raw text) examples are not eligible.
+          </p>
+        )
       )}
     </fieldset>
   );

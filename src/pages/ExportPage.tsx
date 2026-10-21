@@ -72,6 +72,7 @@ const TYPE_WORD: Record<DatasetType, string> = {
   preference: 'DPO',
   kto: 'KTO',
   rl: 'RL',
+  pretrain: 'PT',
 };
 
 function slugify(name: string): string {
@@ -119,7 +120,13 @@ export function ExportPage() {
   // Per-type counts; the dominant type (project primary wins ties) is the
   // default export choice, overridable via the compact type selector.
   const { typeCounts, dominantType } = useMemo(() => {
-    const counts: Record<DatasetType, number> = { sft: 0, preference: 0, kto: 0, rl: 0 };
+    const counts: Record<DatasetType, number> = {
+      sft: 0,
+      preference: 0,
+      kto: 0,
+      rl: 0,
+      pretrain: 0,
+    };
     for (const e of rows ?? []) counts[e.type] += 1;
     let best: DatasetType = project?.datasetType ?? 'sft';
     for (const t of DATASET_TYPES) if (counts[t] > counts[best]) best = t;

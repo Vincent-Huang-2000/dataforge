@@ -49,6 +49,7 @@ import { Tip } from '@/components/ui/Tooltip';
 import { ConversationEditor } from './ConversationEditor';
 import { KtoEditor } from './KtoEditor';
 import { PreferenceEditor } from './PreferenceEditor';
+import { PretrainEditor } from './PretrainEditor';
 import { RlEditor } from './RlEditor';
 
 export interface InspectorPanelProps {
@@ -119,6 +120,8 @@ function buildPatch(type: DatasetType, draft: Draft): DraftPatch {
       return { messages: draft.messages, completion: draft.completion, label: draft.label };
     case 'rl':
       return { messages: draft.messages, answer: draft.answer };
+    case 'pretrain':
+      return { messages: draft.messages };
   }
 }
 
@@ -520,6 +523,8 @@ export function InspectorPanel({
               label={draft.label}
               onChange={patchDraft}
             />
+          ) : example.type === 'pretrain' ? (
+            <PretrainEditor messages={draft.messages} onChange={patchDraft} />
           ) : (
             <RlEditor messages={draft.messages} answer={draft.answer} onChange={patchDraft} />
           )

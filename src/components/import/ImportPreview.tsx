@@ -30,6 +30,7 @@ function clip(text: string): string {
   return oneLine.length > PREVIEW_LEN ? `${oneLine.slice(0, PREVIEW_LEN)}…` : oneLine;
 }
 
+/** First user turn, or the raw text of a pretrain example (its only message). */
 function firstUserContent(e: Example): string {
   const msg = e.messages.find((m) => m.role === 'user') ?? e.messages[0];
   return msg ? clip(msg.content) : '';
@@ -144,9 +145,7 @@ export function ImportPreview({
               <thead>
                 <tr className="border-hairline bg-surface-2 border-b">
                   <th className="tech-label px-2 py-1.5 text-left font-medium">Type</th>
-                  <th className="tech-label w-full px-2 py-1.5 text-left font-medium">
-                    First user turn
-                  </th>
+                  <th className="tech-label w-full px-2 py-1.5 text-left font-medium">Content</th>
                   <th className="tech-label px-2 py-1.5 text-right font-medium">Turns</th>
                 </tr>
               </thead>

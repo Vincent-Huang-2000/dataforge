@@ -29,6 +29,7 @@ const TYPE_OPTIONS: { value: DatasetType; label: string; hint: string }[] = [
   { value: 'preference', label: 'DPO', hint: 'preference pairs' },
   { value: 'kto', label: 'KTO', hint: 'thumbs up/down feedback' },
   { value: 'rl', label: 'RL', hint: 'verifiable answers for GRPO' },
+  { value: 'pretrain', label: 'PT', hint: 'raw text for continued pretraining' },
 ];
 
 const SIZE_TONES: Record<ModelInfo['sizeClass'], BadgeProps['tone']> = {
