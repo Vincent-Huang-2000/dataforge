@@ -164,11 +164,17 @@ pretrain 选择"单条 assistant 消息"而非独立 `text` 字段，是为了�
 | `user`、`human` | `user` |
 | `assistant`、`gpt`、`ai`、`bot`、`model` | `assistant` |
 | `tool`、`observation`、`function` | `tool` |
+| `function_call`（LLaMA-Factory，`FUNCTION_CALL_ROLE`） | `assistant`，content 中的调用 JSON（单个对象或数组）解析为 `toolCalls` |
 
 - 未知角色：`normalizeRole` **抛错**，该行被跳过并计入 `ImportResult.errors`（上限 `MAX_IMPORT_ERRORS = 20`）。
-- 思维链来源字段：`reasoning` / `reasoning_content` / `thinking`（`REASONING_FIELDS`）；content 内嵌的 `<think>…</think>` 块经 `extractThink` 拆分为独立 `reasoning`。
+- 思维链来源字段：`reasoning` / `reasoning_content` / `thinking`（`REASONING_FIELDS`）；content 内嵌的 `<think>…</think>`、`<seed:think>…</seed:think>`、`[THINK]…[/THINK]` 块（导出端会写出的全部内联分隔符）经 `extractThink` 拆分为独立 `reasoning`。
+- 工具：tool 轮缺少 `tool_call_id` 时（LLaMA-Factory、ShareGPT 不带 call id），`linkToolResults` 按顺序关联到前一条 assistant 的 tool call；行级 `tools` 也接受 JSON 字符串（MS-SWIFT、LLaMA-Factory 的写法）。
 - 反向映射 `SHAREGPT_FROM`（导出 ShareGPT 时）：`developer → system`、`user → human`、`assistant → gpt`、`tool → observation`。
 - 原始文本 → pretrain：`detection.ts` 把纯字符串行、单字符串字段行，以及含 `text`/`content` 字符串字段的多列行（`TEXT_FIELDS`，预训练语料常带 `id`/`url`/`meta` 等列）判为 `text` 格式，`convertTextRow` 产出 `type: 'pretrain'` 的单条 assistant 消息。`convertOpenAiRow` 把"仅一条不带 reasoning/toolCalls/tools 的 assistant 消息"（MS-SWIFT 预训练格式）也识别为 pretrain，保证导出可往返。
+- 各框架导出格式的回读（`detection.ts` 的 `classifyRow`）：OpenAI FT DPO（`input.messages` + `preferred_output` / `non_preferred_output`）与 MS-SWIFT DPO（`messages` 末尾的 assistant 轮即 chosen + 扁平的 `rejected_response`）→ `dpo-pairs`；TRL KTO（消息数组 `prompt`）与 MS-SWIFT / LLaMA-Factory KTO（`messages` 末尾的 assistant 轮即 completion + `label`）→ `kto-unpaired`；`{prompt, answer|solution}`（TRL / Axolotl GRPO）→ `prompt-answer` → `rl`，MS-SWIFT RL 的 `solution` 也作为 `answer`。"末尾连续 assistant 轮即回复"由 `splitTrailingReply` 拆分。
+- `prompt-answer` 的边界：`question`/`answer` 仍是 Alpaca SFT；同时带 `output`/`response`/`completion` 或 `messages` 的行不算 RL。
+- 按设计有损的导出（回读后不同于原样本）：Axolotl 的 DPO/KTO/RL prompt 被拍平为单条 user 文本；Alpaca 只容纳单轮问答（含工具调用的对话被跳过，DPO 只保留 chosen 并回读为 SFT）；ShareGPT 不含工具调用和工具定义；LLaMA-Factory 中带工具调用的 assistant 轮会丢弃同轮正文与 reasoning。`exporters.test.ts` 的往返测试以导出 ZIP 覆盖全部「框架 × 类型」组合与各推理分隔符。
+- 导出 ZIP 可直接导入：`importers/zip.ts` 解包后只取数据文件（跳过 `metadata.json`、`dataset_info.json`、配置脚本与 README），按文件名（`train` / `validation`、`val`、`dev`、`eval` / `test`）恢复每条样本的 `split`，经 `rowsToExamples` 的 `splits` 参数写入。
 
 ### 5.2 质检映射（`src/engine/quality.ts`）
 
@@ -202,7 +208,7 @@ pretrain 选择"单条 assistant 消息"而非独立 `text` 字段，是为了�
 | 文件 | 需同步内容 |
 |---|---|
 | `src/engine/types.ts` | `Role` 联合类型 + `Message` 字段（真相源） |
-| `src/engine/convert.ts` | `ROLE_ALIASES`、`SHAREGPT_FROM` |
+| `src/engine/convert.ts` | `ROLE_ALIASES`、`SHAREGPT_FROM`、`FUNCTION_CALL_ROLE` |
 | `src/engine/quality.ts` | `VALID_ROLES` 集合 |
 | `src/engine/templates.ts` | `roleLabel` + 各家族 renderer 的 role switch（决定新角色如何渲染） |
 | `src/engine/exporters/llamaFactory.ts` | `lfRole` 映射 |
@@ -222,7 +228,7 @@ pretrain 选择"单条 assistant 消息"而非独立 `text` 字段，是为了�
 | `src/engine/exporters/*.ts` | 各框架行构造与配置（含 `readme.ts` 的说明文字） |
 | `src/pages/DatasetPage.tsx` | URL `type` 参数白名单（`DATASET_TYPES`） |
 | `src/components/dataset/FilterBar.tsx` | 类型筛选下拉项 |
-| `src/components/home/NewProjectDialog.tsx` | `TYPE_OPTIONS` |
+| `src/components/home/ProjectFields.tsx` | `TYPE_OPTIONS`（新建项目与打开文件对话框共用） |
 | `src/components/dataset/DataGrid.tsx` | `buildPreview` 网格摘要 |
 | `src/components/generate/TargetPicker.tsx` | `AI_ELIGIBLE_TYPES`（AI 操作可作用的类型） |
 | 测试 | `detection` / `convert` / `quality` / `tokens` / `exporters` 测试的类型用例与支持矩阵 |
